@@ -1,0 +1,20 @@
+{
+    "ACTIVATION": "ReLU",
+    "BATCH_SIZE": null,
+    "EPISODES": null,
+    "EPSILON": null,
+    "EPSILON_DECAY": null,
+    "EPSILON_MAX": null,
+    "EPSILON_MIN": null,
+    "GAMMA": 0.99,
+    "LEARNING_RATE": 0.001,
+    "LOSS": null,
+    "MEMORY_SIZE": null,
+    "NETWORK_ARCHITECTURE": [
+        4,
+        128,
+        2
+    ],
+    "SEED": null,
+    "TARGET_UPDATE": null
+}
