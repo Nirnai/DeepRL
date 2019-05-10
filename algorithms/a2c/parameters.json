@@ -1,0 +1,17 @@
+{
+    "BATCH_SIZE": 20,
+    "GAMMA" : 0.99,
+    "LEARNING_RATE" : 1e-3,
+    "ACTIVATION" : "ReLU",
+    "ACTOR_ARCHITECTURE" : [
+        4,
+        128,
+        2
+    ],
+    "CRITIC_ARCHITECTURE" : [
+        4,
+        128,
+        1
+    ],
+    "SEED" : null
+}

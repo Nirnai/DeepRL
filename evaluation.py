@@ -1,6 +1,5 @@
 import os
 import random
-import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools import count
@@ -42,21 +41,27 @@ class Evaluation():
             print("------------------------------------")
 
     def process(self, reward, done):
-        if done:
-            self.curr_episode += 1
-            # Compute new average reward
-            if len(self.episode_rewards) > self.avaraging_window:
-                self.average_rewards = np.append(self.average_rewards, np.mean(self.episode_rewards[-self.avaraging_window - 1 : -1]))
+        if type(reward) != list:
+            reward = [reward]
+        if type(done) != list:
+            done = [done]
+
+        for reward, done in zip(reward, done): 
+            if done:
+                self.curr_episode += 1
+                # Compute new average reward
+                if len(self.episode_rewards) > self.avaraging_window:
+                    self.average_rewards = np.append(self.average_rewards, np.mean(self.episode_rewards[-self.avaraging_window - 1 : -1]))
+                else:
+                    self.average_rewards = np.append(self.average_rewards, np.mean(self.episode_rewards))
+                self.episode_rewards.append(0.0)
+                # Check for Termination
+                if self.episodes > 0:
+                    self.is_solved = self.curr_episode == self.episodes
+                else:
+                    self.is_solved = self.average_rewards[-1] >= self.goal_average_reward    
             else:
-                self.average_rewards = np.append(self.average_rewards, np.mean(self.episode_rewards))
-            self.episode_rewards.append(0.0)
-            # Check for Termination
-            if self.episodes > 0:
-                self.is_solved = self.curr_episode == self.episodes
-            else:
-                self.is_solved = self.average_rewards[-1] >= self.goal_average_reward    
-        else:
-            self.episode_rewards[-1] += reward
+                self.episode_rewards[-1] += reward
         return self.is_solved
     
     def generate_results(self, path):
@@ -136,7 +141,7 @@ class Evaluation():
                     self.generate_results(results_path)
                     break
                 else:
-                    loss = alg.learn(t)
+                    loss = alg.learn()
 
                 if done:
                     state = env.reset()

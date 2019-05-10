@@ -1,0 +1,11 @@
+{
+    "ACTIVATION": "ReLU",
+    "GAMMA": 0.99,
+    "LEARNING_RATE": 0.001,
+    "NETWORK_ARCHITECTURE": [
+        4,
+        128,
+        2
+    ],
+    "SEED": null
+}

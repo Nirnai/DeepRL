@@ -1,10 +1,6 @@
+import itertools
 import gym 
-import torch
-import random
-import numpy as np
-from itertools import count
-from algorithms.dqn.dqn import DQN
-from algorithms.reinforce.reinforce import REINFORCE
+from algorithms import DQN, PG, A2C
 from evaluation import Evaluation
 from hyperparameter import HyperParameter
 
@@ -14,21 +10,22 @@ if __name__ == '__main__':
     # Environment
     env = gym.make('CartPole-v1')
     # Hyperparameters
-    filepath = 'dqn/parameters.json'
+    filepath = 'algorithms/a2c/parameters.json'
     param = HyperParameter(filepath)
     
     # RL Algorithm
-    # alg = REINFORCE(env, param)
-    alg = DQN(env, param, double=True, soft_update=True)
+    # alg = PG(env, param)
+    # alg = DQN(env, param)
+    alg = A2C(env, param)
 
     # Evaluation
     evaluator = Evaluation(env, alg, episodes=1000)
     # evaluator.generate_statistic('results')
-    # evaluator.evaluate_algorithm(alg, param, env)
+    # evaluator.evaluate_algorithm(alg, param, env, 'test/output_data')
 
     state = env.reset()
 
-    for t in count():
+    for t in itertools.count():
         # Act
         state, reward, done = alg.act(state)
 
@@ -42,7 +39,7 @@ if __name__ == '__main__':
             env.render()
         else:
             # TODO: done and t --> unify learn interface
-            loss = alg.learn(done)
+            alg.learn()
 
         if done:
             state = env.reset()

@@ -1,6 +1,5 @@
 import json
 import yaml
-import torch
 
 class HyperParameter:
     def __init__(self, path=None):
