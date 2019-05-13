@@ -10,13 +10,13 @@ if __name__ == '__main__':
     # Environment
     env = gym.make('CartPole-v1')
     # Hyperparameters
-    filepath = 'algorithms/a2c/parameters.json'
+    filepath = 'algorithms/pg/parameters.json'
     param = HyperParameter(filepath)
     
     # RL Algorithm
-    # alg = PG(env, param)
+    alg = PG(env, param)
     # alg = DQN(env, param)
-    alg = A2C(env, param)
+    # alg = A2C(env, param)
 
     # Evaluation
     evaluator = Evaluation(env, alg, episodes=1000)
