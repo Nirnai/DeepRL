@@ -51,10 +51,7 @@ class PG():
             Qs = self.monte_carlo_estimate(self.rewards)
 
             # Compute Loss L = -log(π(a,s)) * A 
-            loss = [-log_prob * Q for log_prob, Q in zip(self.log_probs, Qs)]
-            # loss = []            
-            # for log_prob, Q in zip(self.log_probs, Qs):
-            #     loss.append(-log_prob * Q)    
+            loss = [-log_prob * Q for log_prob, Q in zip(self.log_probs, Qs)]  
             loss = torch.stack(loss).sum()
 
             self.optimizer.zero_grad()
