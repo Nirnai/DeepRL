@@ -21,26 +21,26 @@ if __name__ == '__main__':
     # Evaluation
     evaluator = Evaluation(env, alg, episodes=1000)
     # evaluator.generate_statistic('results')
-    # evaluator.evaluate_algorithm(alg, param, env, 'test/output_data')
+    evaluator.evaluate_algorithm(alg, param, env, 'test/output_data')
 
-    state = env.reset()
+    # state = env.reset()
 
-    for t in itertools.count():
-        # Act
-        state, reward, done = alg.act(state)
+    # for t in itertools.count():
+    #     # Act
+    #     state, reward, done = alg.act(state)
 
-        # Log
-        is_solved = evaluator.process(reward, done)
+    #     # Log
+    #     is_solved = evaluator.process(reward, done)
 
-        # Train/Finish
-        if is_solved:
-            evaluator.generate_results('results')
-            param.save_parameters(filepath)
-            env.render()
-        else:
-            # TODO: done and t --> unify learn interface
-            alg.learn()
+    #     # Train/Finish
+    #     if is_solved:
+    #         evaluator.generate_results('results')
+    #         param.save_parameters(filepath)
+    #         env.render()
+    #     else:
+    #         # TODO: done and t --> unify learn interface
+    #         alg.learn()
 
-        if done:
-            state = env.reset()
-            evaluator.show_progress()
+    #     if done:
+    #         state = env.reset()
+    #         evaluator.show_progress()

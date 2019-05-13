@@ -4,6 +4,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.distributions as dist
+from algorithms.utils import Policy, Value
+from collections import namedtuple
+
+Transition = namedtuple('Transition', ('states',  'log_probs', 'rewards', 'next_states', 'dones'))
 
 
 class A2C():
@@ -16,65 +20,74 @@ class A2C():
         if self.param.SEED != None:
             self.seed(self.param.SEED)
 
-        self.ac = ActorCritic(self.param.ACTOR_ARCHITECTURE, self.param.ACTIVATION)
-        # self.value = Value(self.param.CRITIC_ARCHITECTURE, self.param.ACTIVATION)
-        # self.ac = ActorCritic(self.value, self.policy)
-        self.optimizer = optim.Adam(self.ac.parameters(), lr=self.param.LEARNING_RATE)
+        self.actor = Policy(self.param.ACTOR_ARCHITECTURE, self.param.ACTIVATION)
+        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=self.param.LEARNING_RATE)
 
-        self.rewards = []
-        self.log_probs = []
-        self.values = []
-        # self.advantages = []
+        self.critic = Value(self.param.CRITIC_ARCHITECTURE, self.param.ACTIVATION)
+        self.critic_optimizer = optim.Adam(self.actor.parameters(), lr=self.param.LEARNING_RATE)
+
+        self.rollout = []
+
         self.done = False
     
     def act(self, state):
-        s = torch.from_numpy(state).float()
-        probs, value = self.ac(s)
+        probs = self.actor(torch.from_numpy(state).float())
         m = dist.Categorical(probs)
         action = m.sample()
         next_state, reward, self.done, _ = self.env.step(action.numpy()) 
-        s_next = torch.from_numpy(next_state).float()
 
-        # _, value_next = self.ac(s_next)
-        # advantage = reward + value_next - value
-
-        self.rewards.append(reward) 
-        self.log_probs.append(m.log_prob(action))
-        self.values.append(value)
-        # self.advantages.append(advantage)
+        self.rollout.append(Transition(state, 
+                                       m.log_prob(action), 
+                                       reward, 
+                                       next_state, 
+                                       self.done))
 
         return next_state, reward, self.done
 
 
     def learn(self):
         if self.done:
-            V_hat = torch.stack(self.values).view(1,-1)[0]
-            V_target = torch.Tensor(self.monte_carlo_estimate(self.rewards))
-            criterion = nn.MSELoss()
-            value_loss = [nn.functional.smooth_l1_loss(value, torch.Tensor([R])) for R, value in zip(V_target, self.values)]
+            rollout = Transition(*zip(*self.rollout))
 
-            advantages = [R - value.item() for R, value in zip(V_target, self.values)]
-            policy_loss = [-log_prob * advantage for log_prob, advantage in zip(self.log_probs, advantages)]
+            # Monte Carlo Targets
+            returns = self.monte_carlo_target(rollout.rewards).squeeze().detach()
 
-            loss = torch.stack(policy_loss).sum()+ torch.stack(value_loss).sum()
-            
-            self.optimizer.zero_grad()
-            loss.backward(retain_graph=True)
-            self.optimizer.step()
+            # Bootstrapped Targets
+            # returns = self.bootstrapped_target(rollout.rewards, rollout.next_states).squeeze().detach()
 
-            del self.rewards[:]
-            del self.log_probs[:]
-            del self.values[:]
+            values = self.critic(torch.Tensor(rollout.states)).squeeze()   
+            advantages = returns - values
+            log_probs = torch.stack(rollout.log_probs)
 
+            value_loss = advantages.pow(2).mean()
+            self.critic_optimizer.zero_grad()
+            value_loss.backward()
+            self.critic_optimizer.step()
 
-    def monte_carlo_estimate(self, rewards):
+            policy_loss = (- log_probs * advantages.detach()).sum()
+            self.actor_optimizer.zero_grad()
+            policy_loss.backward()
+            self.actor_optimizer.step()
+
+            del self.rollout[:]
+
+    
+    def bootstrapped_target(self, rewards, next_states):
+        rewards = torch.Tensor(rewards).squeeze()
+        with torch.no_grad():
+            next_values = self.critic(torch.Tensor(next_states)).squeeze()
+            values = rewards + self.param.GAMMA * next_values
+        return values
+        
+
+    def monte_carlo_target(self, rewards):
         R = 0
         V = []
         for r in rewards[::-1]:
             R = r + self.param.GAMMA * R
             V.insert(0, R)   
         V = torch.Tensor(V)
-        V = V - V.mean()
+        # V = V - V.mean()
         return V
 
 
@@ -86,90 +99,3 @@ class A2C():
 
     def reset(self):
         self.__init__(self.env, self.param)
-
-
-
-    def n_step_estimate(self, rewards, dones):
-        pass
-        # R = numpy.array([])
-        # rewards.reverse()
-        # # Inference for nth step
-        # if dones[-1] is True:
-        #     V_next = 0
-        # else:
-        #     V_next = self.value(torch.from_numpy(self.state_batch[-1]).float()).detach()
-        # R = numpy.append(R, V_next)
-
-        # # Bootstrap for prev steps
-        # for r in rewards[1:]:
-        #     V = r + self.param.GAMMA * V_next
-        #     R = numpy.append(R, V)
-        #     V_next = V
-        # return R[::-1] * numpy.invert(numpy.array(dones))
-
-
-
-
-
-class ActorCritic(nn.Module):
-    def __init__(self, architecture, activation):
-        super(ActorCritic, self).__init__()
-        activation = getattr(nn.modules.activation, activation)()
-        layers = [self.activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
-        self.layers = nn.Sequential(*layers)
-        self.p = self.output_layer_policy(architecture[-2], architecture[-1])
-        self.v = self.output_layer_value(architecture[-2])
-
-    def forward(self, state):
-        x = state
-        x = self.layers(x)
-        p = self.p(x)
-        v = self.v(x)
-        return p, v
-
-
-    def activated_layer(self, in_, out_, activation_):
-        return nn.Sequential(
-            nn.Linear(in_, out_),
-            activation_
-        )
-    
-
-    def output_layer_policy(self, in_, out_):
-        return nn.Sequential(
-            nn.Linear(in_, out_),
-            nn.Softmax()
-        )
-
-    def output_layer_value(self, in_):
-        return nn.Sequential(
-            nn.Linear(in_, 1)
-        )
-
-
-class Value(nn.Module):
-    def __init__(self, architecture, activation):
-        super(Value, self).__init__()
-        activation = getattr(nn.modules.activation, activation)()
-        layers = [self.activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
-        self.layers = nn.Sequential(*layers)
-        self.output = self.output_layer(architecture[-2], architecture[-1])
-
-    def forward(self, state):
-        x = state
-        x = self.layers(x)
-        y = self.output(x)
-        return y
-
-
-    def activated_layer(self, in_, out_, activation_):
-        return nn.Sequential(
-            nn.Linear(in_, out_),
-            activation_
-        )
-    
-
-    def output_layer(self, in_, out_):
-        return nn.Sequential(
-            nn.Linear(in_, out_)
-        )
