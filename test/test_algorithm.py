@@ -5,8 +5,7 @@ import torch
 import random
 import numpy as np
 from itertools import count
-from algorithms.dqn.dqn import DQN
-from algorithms.reinforce.reinforce import REINFORCE
+from algorithms import DQN, PG
 from evaluation import Evaluation
 from hyperparameter import HyperParameter
 
@@ -18,7 +17,7 @@ def test_dqn():
     param = HyperParameter(filepath)
     
     # RL Algorithm
-    alg = DQN(env, param, double=False, soft_update=True)
+    alg = DQN(env, param)
 
     # Evaluation
     evaluator = Evaluation(env, alg, episodes=20)
