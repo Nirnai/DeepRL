@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.distributions as dist
 from algorithms.utils import Policy, Value
+from algorithms.utils import getEnvInfo
 from collections import namedtuple
 
 Transition = namedtuple('Transition', ('states',  'log_probs', 'rewards', 'next_states', 'dones'))
@@ -17,10 +18,16 @@ class A2C():
         self.param = param
         self.rng = random.Random()
 
+        self.state_dim, self.action_dim, self.action_space = getEnvInfo(env)
+        self.param.ACTOR_ARCHITECTURE[0] = self.state_dim
+        self.param.CRITIC_ARCHITECTURE[0] = self.state_dim
+        self.param.ACTOR_ARCHITECTURE[-1] = self.action_dim
+        self.param.CRITIC_ARCHITECTURE[-1] = 1
+
         if self.param.SEED != None:
             self.seed(self.param.SEED)
 
-        self.actor = Policy(self.param.ACTOR_ARCHITECTURE, self.param.ACTIVATION)
+        self.actor = Policy(self.param.ACTOR_ARCHITECTURE, self.param.ACTIVATION, action_space=self.action_space)
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=self.param.LEARNING_RATE)
 
         self.critic = Value(self.param.CRITIC_ARCHITECTURE, self.param.ACTIVATION)
@@ -31,13 +38,13 @@ class A2C():
         self.done = False
     
     def act(self, state):
-        probs = self.actor(torch.from_numpy(state).float())
-        m = dist.Categorical(probs)
-        action = m.sample()
+        ''' '''
+        policy = self.actor(torch.from_numpy(state).float())
+        action = policy.sample() 
         next_state, reward, self.done, _ = self.env.step(action.numpy()) 
 
         self.rollout.append(Transition(state, 
-                                       m.log_prob(action), 
+                                       policy.log_prob(action), 
                                        reward, 
                                        next_state, 
                                        self.done))
@@ -87,7 +94,7 @@ class A2C():
             R = r + self.param.GAMMA * R
             V.insert(0, R)   
         V = torch.Tensor(V)
-        # V = V - V.mean()
+        V = (V - V.mean()) / (V.std() + 1e-5) 
         return V
 
 

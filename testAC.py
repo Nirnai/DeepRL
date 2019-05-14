@@ -1,129 +1,195 @@
-import gym, os
-from itertools import count
+import argparse
+import pickle
+from collections import namedtuple
+
+import matplotlib.pyplot as plt
+
+import gym
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
-from torch.distributions import Categorical
+import torch.optim as optim
+from torch.distributions import Normal
+from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
+
+parser = argparse.ArgumentParser(description='Solve the Pendulum-v0 with PPO')
+parser.add_argument(
+    '--gamma', type=float, default=0.9, metavar='G', help='discount factor (default: 0.9)')
+parser.add_argument('--seed', type=int, default=0, metavar='N', help='random seed (default: 0)')
+parser.add_argument('--render', action='store_true', help='render the environment')
+parser.add_argument(
+    '--log-interval',
+    type=int,
+    default=10,
+    metavar='N',
+    help='interval between training status logs (default: 10)')
+args = parser.parse_args()
+
+torch.manual_seed(args.seed)
+
+TrainingRecord = namedtuple('TrainingRecord', ['ep', 'reward'])
+Transition = namedtuple('Transition', ['s', 'a', 'a_log_p', 'r', 's_'])
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-env = gym.make("CartPole-v0").unwrapped
+class ActorNet(nn.Module):
 
-state_size = env.observation_space.shape[0]
-action_size = env.action_space.n
-lr = 0.0001
+    def __init__(self):
+        super(ActorNet, self).__init__()
+        self.fc = nn.Linear(3, 100)
+        self.mu_head = nn.Linear(100, 1)
+        self.sigma_head = nn.Linear(100, 1)
 
-class Actor(nn.Module):
-    def __init__(self, state_size, action_size):
-        super(Actor, self).__init__()
-        self.state_size = state_size
-        self.action_size = action_size
-        self.linear1 = nn.Linear(self.state_size, 128)
-        self.linear2 = nn.Linear(128, 256)
-        self.linear3 = nn.Linear(256, self.action_size)
-
-    def forward(self, state):
-        output = F.relu(self.linear1(state))
-        output = F.relu(self.linear2(output))
-        output = self.linear3(output)
-        distribution = Categorical(F.softmax(output, dim=-1))
-        return distribution
+    def forward(self, x):
+        x = F.relu(self.fc(x))
+        mu = 2.0 * torch.tanh(self.mu_head(x))
+        sigma = F.softplus(self.sigma_head(x))
+        return (mu, sigma)
 
 
-class Critic(nn.Module):
-    def __init__(self, state_size, action_size):
-        super(Critic, self).__init__()
-        self.state_size = state_size
-        self.action_size = action_size
-        self.linear1 = nn.Linear(self.state_size, 128)
-        self.linear2 = nn.Linear(128, 256)
-        self.linear3 = nn.Linear(256, 1)
+class CriticNet(nn.Module):
 
-    def forward(self, state):
-        output = F.relu(self.linear1(state))
-        output = F.relu(self.linear2(output))
-        value = self.linear3(output)
-        return value
+    def __init__(self):
+        super(CriticNet, self).__init__()
+        self.fc = nn.Linear(3, 100)
+        self.v_head = nn.Linear(100, 1)
+
+    def forward(self, x):
+        x = F.relu(self.fc(x))
+        state_value = self.v_head(x)
+        return state_value
 
 
-def compute_returns(next_value, rewards, masks, gamma=0.99):
-    R = next_value
-    returns = []
-    for step in reversed(range(len(rewards))):
-        R = rewards[step] + gamma * R * masks[step]
-        returns.insert(0, R)
-    return returns
+class Agent():
+
+    clip_param = 0.2
+    max_grad_norm = 0.5
+    ppo_epoch = 10
+    buffer_capacity, batch_size = 1000, 32
+
+    def __init__(self):
+        self.training_step = 0
+        self.anet = ActorNet().float()
+        self.cnet = CriticNet().float()
+        self.buffer = []
+        self.counter = 0
+
+        self.optimizer_a = optim.Adam(self.anet.parameters(), lr=1e-4)
+        self.optimizer_c = optim.Adam(self.cnet.parameters(), lr=3e-4)
+
+    def select_action(self, state):
+        state = torch.from_numpy(state).float().unsqueeze(0)
+        with torch.no_grad():
+            (mu, sigma) = self.anet(state)
+        dist = Normal(mu, sigma)
+        action = dist.sample()
+        action_log_prob = dist.log_prob(action)
+        action.clamp(-2.0, 2.0)
+        return action.item(), action_log_prob.item()
+
+    def get_value(self, state):
+
+        state = torch.from_numpy(state).float().unsqueeze(0)
+        with torch.no_grad():
+            state_value = self.cnet(state)
+        return state_value.item()
+
+    def save_param(self):
+        torch.save(self.anet.state_dict(), 'param/ppo_anet_params.pkl')
+        torch.save(self.cnet.state_dict(), 'param/ppo_cnet_params.pkl')
+
+    def store(self, transition):
+        self.buffer.append(transition)
+        self.counter += 1
+        return self.counter % self.buffer_capacity == 0
+
+    def update(self):
+        self.training_step += 1
+
+        s = torch.Tensor([t.s for t in self.buffer]).float()
+        a = torch.Tensor([t.a for t in self.buffer]).float().view(-1, 1)
+        r = torch.Tensor([t.r for t in self.buffer]).float().view(-1, 1)
+        s_ = torch.Tensor([t.s_ for t in self.buffer]).float()
+
+        old_action_log_probs = torch.Tensor(
+            [t.a_log_p for t in self.buffer]).float().view(-1, 1)
+
+        r = (r - r.mean()) / (r.std() + 1e-5)
+        with torch.no_grad():
+            target_v = r + args.gamma * self.cnet(s_)
+
+        adv = (target_v - self.cnet(s)).detach()
+
+        for _ in range(self.ppo_epoch):
+            for index in BatchSampler(
+                    SubsetRandomSampler(range(self.buffer_capacity)), self.batch_size, False):
+
+                (mu, sigma) = self.anet(s[index])
+                dist = Normal(mu, sigma)
+                action_log_probs = dist.log_prob(a[index])
+                ratio = torch.exp(action_log_probs - old_action_log_probs[index])
+
+                surr1 = ratio * adv[index]
+                surr2 = torch.clamp(ratio, 1.0 - self.clip_param,
+                                    1.0 + self.clip_param) * adv[index]
+                action_loss = -torch.min(surr1, surr2).mean()
+
+                self.optimizer_a.zero_grad()
+                action_loss.backward()
+                nn.utils.clip_grad_norm_(self.anet.parameters(), self.max_grad_norm)
+                self.optimizer_a.step()
+
+                value_loss = F.smooth_l1_loss(self.cnet(s[index]), target_v[index])
+                self.optimizer_c.zero_grad()
+                value_loss.backward()
+                nn.utils.clip_grad_norm_(self.cnet.parameters(), self.max_grad_norm)
+                self.optimizer_c.step()
+
+        del self.buffer[:]
 
 
-def trainIters(actor, critic, n_iters):
-    optimizerA = optim.Adam(actor.parameters())
-    optimizerC = optim.Adam(critic.parameters())
-    for iter in range(n_iters):
+def main():
+    env = gym.make('Pendulum-v0')
+    env.seed(args.seed)
+
+    agent = Agent()
+
+    training_records = []
+    running_reward = -1000
+    state = env.reset()
+    for i_ep in range(1000):
+        score = 0
         state = env.reset()
-        log_probs = []
-        values = []
-        rewards = []
-        masks = []
-        entropy = 0
-        env.reset()
 
-        for i in count():
-            env.render()
-            state = torch.FloatTensor(state).to(device)
-            dist, value = actor(state), critic(state)
+        for t in range(200):
+            action, action_log_prob = agent.select_action(state)
+            state_, reward, done, _ = env.step([action])
+            if args.render:
+                env.render()
+            if agent.store(Transition(state, action, action_log_prob, (reward + 8) / 8, state_)):
+                agent.update()
+            score += reward
+            state = state_
 
-            action = dist.sample()
-            next_state, reward, done, _ = env.step(action.cpu().numpy())
+        running_reward = running_reward * 0.9 + score * 0.1
+        training_records.append(TrainingRecord(i_ep, running_reward))
 
-            log_prob = dist.log_prob(action).unsqueeze(0)
-            entropy += dist.entropy().mean()
+        if i_ep % args.log_interval == 0:
+            print('Ep {}\tMoving average score: {:.2f}\t'.format(i_ep, running_reward))
+        if running_reward > -200:
+            print("Solved! Moving average score is now {}!".format(running_reward))
+            env.close()
+            agent.save_param()
+            with open('log/ppo_training_records.pkl', 'wb') as f:
+                pickle.dump(training_records, f)
+            break
 
-            log_probs.append(log_prob)
-            values.append(value)
-            rewards.append(torch.tensor([reward], dtype=torch.float, device=device))
-            masks.append(torch.tensor([1-done], dtype=torch.float, device=device))
-
-            state = next_state
-
-            if done:
-                print('Iteration: {}, Score: {}'.format(iter, i))
-                break
-
-
-        next_state = torch.FloatTensor(next_state).to(device)
-        next_value = critic(next_state)
-        returns = compute_returns(next_value, rewards, masks)
-
-        log_probs = torch.cat(log_probs)
-        returns = torch.cat(returns).detach()
-        values = torch.cat(values)
-
-        advantage = returns - values
-
-        actor_loss = -(log_probs * advantage.detach()).mean()
-        critic_loss = advantage.pow(2).mean()
-
-        optimizerA.zero_grad()
-        optimizerC.zero_grad()
-        actor_loss.backward()
-        critic_loss.backward()
-        optimizerA.step()
-        optimizerC.step()
-    torch.save(actor, 'model/actor.pkl')
-    torch.save(critic, 'model/critic.pkl')
-    env.close()
+    plt.plot([r.ep for r in training_records], [r.reward for r in training_records])
+    plt.title('PPO')
+    plt.xlabel('Episode')
+    plt.ylabel('Moving averaged episode reward')
+    plt.savefig("img/ppo.png")
+    plt.show()
 
 
 if __name__ == '__main__':
-    if os.path.exists('model/actor.pkl'):
-        actor = torch.load('model/actor.pkl')
-        print('Actor Model loaded')
-    else:
-        actor = Actor(state_size, action_size).to(device)
-    if os.path.exists('model/critic.pkl'):
-        critic = torch.load('model/critic.pkl')
-        print('Critic Model loaded')
-    else:
-        critic = Critic(state_size, action_size).to(device)
-    trainIters(actor, critic, n_iters=100)
+    main()

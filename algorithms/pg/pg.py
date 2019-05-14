@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.distributions as dist
 from algorithms.utils import Policy
+from algorithms.utils import getEnvInfo
 from itertools import accumulate
 
 class PG():
@@ -14,12 +15,18 @@ class PG():
         self.env = env
         self.param = param
         self.rng = random.Random()
-        # self.is_discrete = type(env.action_space) == gym.spaces.discrete.Discrete
-        self.policy = Policy(self.param.NETWORK_ARCHITECTURE, self.param.ACTIVATION)
-        self.optimizer = optim.Adam(self.policy.parameters(), lr=self.param.LEARNING_RATE)
+        
+        self.state_dim, self.action_dim, self.action_space = getEnvInfo(env)
+        self.param.NETWORK_ARCHITECTURE[0] = self.state_dim
+        self.param.NETWORK_ARCHITECTURE[-1] = self.action_dim
 
         if self.param.SEED != None:
             self.seed(self.param.SEED)
+
+        self.policy = Policy(self.param.NETWORK_ARCHITECTURE, self.param.ACTIVATION, action_space=self.action_space)
+        self.optimizer = optim.Adam(self.policy.parameters(), lr=self.param.LEARNING_RATE)
+
+        
 
         self.rewards = []
         self.log_probs = []
@@ -28,18 +35,11 @@ class PG():
 
     def act(self, state):
         '''  '''
-        # if self.is_discrete:
-            # Multinomial Action Distribution
-        probs = self.policy(torch.from_numpy(state).float())
-        m = dist.Categorical(probs)
-        # else:
-        #     # Gaussian Action Distribution
-        #     mu, sigma = self.policy(torch.from_numpy(state).float())
-        #     m = dist.Normal(mu, sigma)
-        action = m.sample() 
+        policy = self.policy(torch.from_numpy(state).float())
+        action = policy.sample() 
         next_state, reward, self.done, _ = self.env.step(action.numpy()) 
 
-        self.log_probs.append(m.log_prob(action))
+        self.log_probs.append(policy.log_prob(action))
         self.rewards.append(reward)
 
         return next_state, reward, self.done
@@ -50,7 +50,7 @@ class PG():
             # Monte Carlo estimate of returns 
             Qs = self.monte_carlo_estimate(self.rewards)
 
-            # Compute Loss L = -log(π(a,s)) * A 
+            # Compute Loss L = -log(π(a,s)) * Q 
             loss = [-log_prob * Q for log_prob, Q in zip(self.log_probs, Qs)]  
             loss = torch.stack(loss).sum()
 
@@ -69,7 +69,7 @@ class PG():
             R = r + self.param.GAMMA * R
             Qs.insert(0, R)
         Qs = torch.Tensor(Qs)
-        # Qs = Qs - Qs.mean()
+        Qs = Qs - Qs.mean()
         return Qs
 
     def seed(self, seed):
@@ -80,44 +80,3 @@ class PG():
 
     def reset(self):
         self.__init__(self.env, self.param)
-
-    
-# class Policy(nn.Module):
-#     def __init__(self, state_space, action_space, architecture, activation):
-#         super(Policy, self).__init__()
-#         self.activation = getattr(nn.modules.activation, activation)()
-        
-        
-#         layers = [self.activated_layer(in_, out_, self.activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
-#         self.layers = nn.Sequential(*layers)
-#         self.output = self.output_layer(architecture[-2], action_space)
-            
-        
-#     def forward(self, state):
-#         x = state
-#         if self.is_discrete:
-#             x = self.layers(x)
-#             y = self.output(x)
-#             return y
-            
-
-#     def activated_layer(self, in_, out_, activation_):
-#         return nn.Sequential(
-#             nn.Linear(in_, out_),
-#             # nn.BatchNorm1d(out_, affine=False),
-#             activation_
-#         )
-        
-#     def output_layer(self, in_, action_space):
-#         if action_space.__class__.__name__ == "Discrete":
-#             num_outputs = action_space.n
-#             return nn.Sequential(
-#                 nn.Linear(in_, num_outputs),
-#                 nn.Softmax()
-#             )
-#         elif action_space.__class__.__name__ == "Box":
-#             num_outputs = action_space.shape[0]
-#             return nn.Sequential(nn.Linear(in_, num_outputs))
-#         else:
-#             raise NotImplementedError
-

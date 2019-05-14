@@ -8,6 +8,7 @@ class Evaluation():
     def __init__(self, env, algorithm, episodes=0, averaging_window=100):
         self.alg_name = algorithm.name
         self.env_name = env.spec.id
+        self.env = env
         self.param = algorithm.param
         
         # Logs
@@ -23,7 +24,9 @@ class Evaluation():
         self.episodes = episodes
         self.avaraging_window = averaging_window
         self.goal_average_reward = env.spec.reward_threshold
-        
+        if self.goal_average_reward is None:
+            self.goal_average_reward = -200
+            
 
     # TODO: Create Function that does an evaluation on final policy
     def reset(self):
@@ -62,7 +65,7 @@ class Evaluation():
                     self.is_solved = self.average_rewards[-1] >= self.goal_average_reward    
             else:
                 self.episode_rewards[-1] += reward
-        return self.is_solved
+        return self.is_solved, self.curr_episode
     
     def generate_results(self, path):
         # TODO: Generated Files should hold paramter info and unique identifier
@@ -114,7 +117,7 @@ class Evaluation():
         plt.legend()
         plt.savefig('{}/{}_stat.png'.format(path,filename))
 
-    def evaluate_algorithm(self, alg, param, env, results_path, samples=10, seed=0,):
+    def evaluate_algorithm(self, alg, param, env, results_path, samples=10, seed=0, render=False):
         
         rng = random.Random(seed)
         seeds = []
@@ -129,12 +132,15 @@ class Evaluation():
             self.reset()
             alg.reset()
             state = env.reset()
+            episode = 0
     
             for t in count():
+                if render or episode > 3000:
+                    env.render()
                 # Act
                 state, reward, done = alg.act(state)
                 # Eval
-                is_solved = self.process(reward, done)
+                is_solved, episode = self.process(reward, done)
                 # Train/Finish
                 if is_solved:
                     # TODO: Evaluate the resulting policy

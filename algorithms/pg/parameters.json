@@ -5,7 +5,10 @@
     "NETWORK_ARCHITECTURE": [
         4,
         128,
+        200,
+        128,
         2
     ],
-    "SEED": null
+    "SEED": null,
+    "EXPLORATION_NOISE" : 0.20
 }

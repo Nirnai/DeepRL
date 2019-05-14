@@ -5,7 +5,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
-from algorithms.utils import ActionValue
 from collections import deque, namedtuple
 
 
@@ -140,33 +139,33 @@ class ReplayBuffer(object):
 
 
 
-# class ActionValue(nn.Module):
-#     def __init__(self, architecture, activation):
-#         super(ActionValue, self).__init__()
-#         self.activation = getattr(nn.modules.activation, activation)()
-#         layers = [self.activated_layer(in_, out_, self.activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
-#         self.layers = nn.Sequential(*layers)
-#         self.output = self.output_layer(architecture[-2], architecture[-1])
-#         # Weight initialization for output layer so that in the beginning values are close to zero
-#         self.output[-1].weight.data.uniform_(-3e-3, 3e-3)
+class ActionValue(nn.Module):
+    def __init__(self, architecture, activation):
+        super(ActionValue, self).__init__()
+        self.activation = getattr(nn.modules.activation, activation)()
+        layers = [self.activated_layer(in_, out_, self.activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
+        self.layers = nn.Sequential(*layers)
+        self.output = self.output_layer(architecture[-2], architecture[-1])
+        # Weight initialization for output layer so that in the beginning values are close to zero
+        self.output[-1].weight.data.uniform_(-3e-3, 3e-3)
     
 
-#     def forward(self, state):
-#         x = state
-#         x = self.layers(x)
-#         y = self.output(x)
-#         return y
+    def forward(self, state):
+        x = state
+        x = self.layers(x)
+        y = self.output(x)
+        return y
 
     
-#     def activated_layer(self, in_, out_, activation_):
-#         return nn.Sequential(
-#             nn.Linear(in_, out_),
-#             # nn.BatchNorm1d(out_, affine=False),
-#             activation_
-#         )
+    def activated_layer(self, in_, out_, activation_):
+        return nn.Sequential(
+            nn.Linear(in_, out_),
+            # nn.BatchNorm1d(out_, affine=False),
+            activation_
+        )
     
-#     def output_layer(self, in_, out_):
-#         return nn.Sequential(
-#             nn.Linear(in_, out_)
-#         )
+    def output_layer(self, in_, out_):
+        return nn.Sequential(
+            nn.Linear(in_, out_)
+        )
 
