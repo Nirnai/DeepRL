@@ -11,7 +11,7 @@ from collections import namedtuple
 Transition = namedtuple('Transition', ('log_probs', 'entropy', 'rewards', 'values', 'mask'))
 
 
-class A2C():
+class PPO():
     def __init__(self, env, param):
         self.name = "A2C"
         self.env = env

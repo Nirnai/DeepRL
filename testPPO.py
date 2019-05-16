@@ -41,7 +41,7 @@ class ActorNet(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.fc(x))
-        mu = 2.0 * torch.tanh(self.mu_head(x))
+        mu = 2.0 * F.tanh(self.mu_head(x))
         sigma = F.softplus(self.sigma_head(x))
         return (mu, sigma)
 
@@ -105,13 +105,13 @@ class Agent():
     def update(self):
         self.training_step += 1
 
-        s = torch.Tensor([t.s for t in self.buffer]).float()
-        a = torch.Tensor([t.a for t in self.buffer]).float().view(-1, 1)
-        r = torch.Tensor([t.r for t in self.buffer]).float().view(-1, 1)
-        s_ = torch.Tensor([t.s_ for t in self.buffer]).float()
+        s = torch.tensor([t.s for t in self.buffer], dtype=torch.float)
+        a = torch.tensor([t.a for t in self.buffer], dtype=torch.float).view(-1, 1)
+        r = torch.tensor([t.r for t in self.buffer], dtype=torch.float).view(-1, 1)
+        s_ = torch.tensor([t.s_ for t in self.buffer], dtype=torch.float)
 
-        old_action_log_probs = torch.Tensor(
-            [t.a_log_p for t in self.buffer]).float().view(-1, 1)
+        old_action_log_probs = torch.tensor(
+            [t.a_log_p for t in self.buffer], dtype=torch.float).view(-1, 1)
 
         r = (r - r.mean()) / (r.std() + 1e-5)
         with torch.no_grad():
@@ -177,11 +177,12 @@ def main():
             print('Ep {}\tMoving average score: {:.2f}\t'.format(i_ep, running_reward))
         if running_reward > -200:
             print("Solved! Moving average score is now {}!".format(running_reward))
-            env.close()
-            agent.save_param()
-            with open('log/ppo_training_records.pkl', 'wb') as f:
-                pickle.dump(training_records, f)
-            break
+            args.render = True
+            # env.close()
+            # agent.save_param()
+            # with open('log/ppo_training_records.pkl', 'wb') as f:
+            #     pickle.dump(training_records, f)
+            # break
 
     plt.plot([r.ep for r in training_records], [r.reward for r in training_records])
     plt.title('PPO')

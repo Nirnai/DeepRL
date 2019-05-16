@@ -1,14 +1,20 @@
 import torch
 import torch.nn as nn
+from torch.distributions import Normal, Categorical
 
+
+def init_weights_underTest(m):
+    if isinstance(m, nn.Linear):
+        nn.init.normal_(m.weight, mean=0., std=0.1)
+        nn.init.constant_(m.bias, 0.1)
 
 def init_hidden_weights(m):
-    if type(m) == nn.Linear:
+    if isinstance(m, nn.Linear):
         nn.init.xavier_uniform_(m.weight)
         nn.init.zeros_(m.bias)
 
 def init_output_weights(m):
-    if type(m) == nn.Linear:
+    if isinstance(m, nn.Linear):
         nn.init.uniform_(m.weight, -3e-3, 3e-3)
         nn.init.zeros_(m.bias)
 
@@ -25,10 +31,10 @@ def linear_layer(in_, out_):
     )
 
 def softmax_layer(in_, out_):
-    return nn.ModuleList([nn.Sequential(
+    return nn.Sequential(
         nn.Linear(in_, out_),
         nn.Softmax(dim=-1)
-    )])
+    )
 
 def continuous_stochatic_layer(in_, out_):
     return nn.ModuleList([nn.Sequential(
@@ -132,39 +138,38 @@ class ActionValue(nn.Module):
 
 
 class ActorCritic(nn.Module):
-    def __init__(self, architecture, activation, output='discrete'):
+    def __init__(self, architecture, activation, action_space='discrete', exploration=0.0):
         super(ActorCritic, self).__init__()
+        self.action_space = action_space
+        self.log_std = nn.Parameter(torch.ones(1, architecture[-1]) * exploration)
         activation = getattr(nn.modules.activation, activation)()
-        layers = [self.activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
-        
-        self.layers = nn.Sequential(*layers)
-        self.layers.apply(init_hidden_weights)
-        
-        if output is 'discrete':
-            self.actor = self.softmax_layer(architecture[-2], architecture[-1])
-        elif output is 'continuous':
-            self.actor = self.linear_layer(architecture[-2], architecture[-1])
+        layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
+
+        # Create Actor and Critic Network
+        critic_output = [linear_layer(architecture[-2], 1)]
+        critic_layers = layers + critic_output
+        if self.action_space is 'discrete':
+            actor_output = [softmax_layer(architecture[-2], architecture[-1])]
+            actor_layers = layers + actor_output
+        elif self.action_space is 'continuous':
+            actor_output = [linear_layer(architecture[-2], architecture[-1])]
+            actor_layers = layers + actor_output
         else:
             raise NotImplementedError
-       
-        self.critic = self.linear_layer(architecture[-2])
-        self.critic.apply(init_output_weights)
+        
+        self.critic = nn.Sequential(*critic_layers)
+        self.actor = nn.Sequential(*actor_layers)
+        self.apply(init_weights_underTest)
 
     def forward(self, state):
-        x = state
-        x = self.layers(x)
-        policy = self.actor(x)
-        value = self.critic(x)
-        return policy, value
+        value = self.critic(state)
+        if self.action_space is 'discrete':
+            probs = self.actor(state)
+            dist = Categorical(probs)
+        if self.action_space is 'continuous':
+            mu = self.actor(state)
+            std = self.log_std.exp().squeeze().expand_as(mu)
+            dist = Normal(mu, std)
+        return dist, value
     
-    def policy(self, state):
-        x = state
-        x = self.layers(x)
-        policy = self.actor(x)
-        return policy
 
-    def value(self, state):
-        x = state
-        x = self.layers(x)
-        value = self.critic(x)
-        return value

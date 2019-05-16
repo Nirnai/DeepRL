@@ -2,7 +2,7 @@
     "BATCH_SIZE": 20,
     "GAMMA" : 0.99,
     "LAMBDA" : 0.99,
-    "STEPS" : 200,
+    "STEPS" : 100,
     "LEARNING_RATE" : 1e-3,
     "ACTIVATION" : "ReLU",
     "ACTOR_ARCHITECTURE" : [

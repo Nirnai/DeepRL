@@ -8,8 +8,8 @@ if __name__ == '__main__':
 
     # Test ssh
     # Environment
-    env = gym.make('CartPole-v1')
-    # env = gym.make('Pendulum-v0')
+    # env = gym.make('CartPole-v1')
+    env = gym.make('Pendulum-v0')
     # env = gym.make('MountainCarContinuous-v0')
     # env = gym.make('MountainCar-v0')
     # Hyperparameters
@@ -29,21 +29,22 @@ if __name__ == '__main__':
 
     state = env.reset()
 
-    for t in itertools.count():
-        # Act
-        state, reward, done = alg.act(state)
+    for i in range(N):
+        for t in itertools.count():
+            # Act
+            state, reward, done = alg.act(state)
 
-        # Log
-        is_solved, episode = evaluator.process(reward, done)
+            # Log
+            is_solved, episode = evaluator.process(reward, done)
 
-        # Train/Finish
-        if is_solved:
-            evaluator.generate_results('results')
-            param.save_parameters(filepath)
-            env.render()
-        else:
-            alg.learn()
+            # Train/Finish
+            if is_solved:
+                evaluator.generate_results('results')
+                param.save_parameters(filepath)
+                env.render()
+            else:
+                alg.learn()
 
-        if done:
-            state = env.reset()
-            evaluator.show_progress()
+            if done:
+                state = env.reset()
+                evaluator.show_progress()
