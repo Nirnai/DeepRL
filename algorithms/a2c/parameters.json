@@ -1,13 +1,13 @@
 {
     "BATCH_SIZE": 20,
     "GAMMA" : 0.99,
-    "LAMBDA" : 0.99,
-    "STEPS" : 200,
-    "LEARNING_RATE" : 1e-3,
+    "LAMBDA" : 0.95,
+    "STEPS" : 320,
+    "LEARNING_RATE" : 1e-2,
     "ACTIVATION" : "ReLU",
     "ACTOR_ARCHITECTURE" : [
         4,
-        128,
+        256,
         2
     ],
     "SEED" : null

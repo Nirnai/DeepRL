@@ -8,6 +8,7 @@ class Evaluation():
     def __init__(self, env, algorithm, episodes=0, averaging_window=100):
         self.alg_name = algorithm.name
         self.env_name = env.spec.id
+        self.alg = algorithm
         self.env = env
         self.param = algorithm.param
         
@@ -41,6 +42,7 @@ class Evaluation():
             print("Episode: {}".format(self.curr_episode))
             print("Average Reward: {}".format(self.average_rewards[-1]))
             print("Goal Average Reward: {}".format(self.goal_average_reward))
+            print("Steps: {}".format(self.alg.steps))
             print("------------------------------------")
 
     def process(self, reward, done):
@@ -135,8 +137,8 @@ class Evaluation():
             episode = 0
     
             for t in count():
-                if render or episode > 3000:
-                    env.render()
+                # if render or episode > 3000:
+                #     env.render()
                 # Act
                 state, reward, done = alg.act(state)
                 # Eval

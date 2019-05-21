@@ -8,7 +8,7 @@ from algorithms.utils import ActorCritic
 from algorithms.utils import getEnvInfo
 from collections import namedtuple
 
-Transition = namedtuple('Transition', ('log_probs', 'entropy', 'rewards', 'values', 'mask'))
+Transition = namedtuple('Transition', ('log_probs', 'entropy', 'rewards', 'values', 'next_values', 'mask'))
 
 
 class A2C():
@@ -29,6 +29,7 @@ class A2C():
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.param.LEARNING_RATE)
 
         self.rollout = []
+        # self.rollouts = []
 
         self.steps = 0
         self.done = False
@@ -39,10 +40,14 @@ class A2C():
         action = policy.sample() 
         next_state, reward, done, _ = self.env.step(action.numpy()) 
 
+        with torch.no_grad():
+            _, next_value = self.model(torch.from_numpy(next_state).float())
+
         self.rollout.append(Transition(policy.log_prob(action), 
                                        policy.entropy(),
                                        reward, 
                                        value, 
+                                       next_value,
                                        (1-done)))
         self.steps += 1
         self.done = done  
@@ -52,16 +57,18 @@ class A2C():
 
 
     def learn(self):
-        # if self.steps % self.param.STEPS == 0:
-        if self.done:
+        if self.steps % self.param.STEPS == 0:
+        # if self.done:
             rollout = Transition(*zip(*self.rollout))
-
             rewards = torch.Tensor(rollout.rewards)
             values = torch.stack(rollout.values).squeeze()
+            next_values = torch.stack(rollout.next_values).squeeze()
             log_probs = torch.stack(rollout.log_probs)
-            entropy = torch.stack(rollout.entropy).mean()
+            entropy = torch.stack(rollout.entropy).sum()
             mask = torch.Tensor(rollout.mask)
 
+
+            # advantages = self.bootstrapped_advantage_estimation(rewards, values, next_values, mask)
             # Monte Carlo Advantages
             advantages = self.monte_carlo_advantage_estimation(rewards, values, mask)
             # General Advantages
@@ -70,7 +77,7 @@ class A2C():
             critic_loss = advantages.pow(2).mean()
             actor_loss = (- log_probs * advantages.detach()).sum()
 
-            loss = critic_loss + actor_loss
+            loss =  actor_loss + 0.5 * critic_loss  - 0.001 * entropy
 
             self.optimizer.zero_grad()
             loss.backward()
@@ -78,6 +85,10 @@ class A2C():
 
             del self.rollout[:]
 
+
+    def bootstrapped_advantage_estimation(self, rewards, values, next_values, mask):
+        advantages = rewards + self.param.GAMMA * next_values * mask - values
+        return advantages
     
     def generaized_advantage_estimation(self, rewards, values, mask):
         '''  Generaized Advantage Estimation '''
@@ -96,12 +107,15 @@ class A2C():
 
 
     def monte_carlo_advantage_estimation(self, rewards, values, mask):
-        Q = 0
+        with torch.no_grad():
+                _, next_value = self.model(self.next_state)
+        Q = next_value
         returns = []
         for t in reversed(range(len(rewards))):
             Q = rewards[t] + self.param.GAMMA * Q * mask[t]
             returns.insert(0, Q)   
-        advantages = torch.Tensor(returns) - values * mask
+        advantages = torch.Tensor(returns) - values
+        
         return advantages
 
 

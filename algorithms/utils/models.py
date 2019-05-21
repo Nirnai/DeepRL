@@ -1,12 +1,14 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.distributions import Normal, Categorical
+from copy import deepcopy
 
-
-def init_weights_underTest(m):
+def init_policy_weights(m):
     if isinstance(m, nn.Linear):
-        nn.init.normal_(m.weight, mean=0., std=0.1)
-        nn.init.constant_(m.bias, 0.1)
+        m.weight.data.mul_(0.1)
+        # nn.init.normal_(m.weight, mean=0.001, std=0.01)
+        nn.init.zeros_(m.bias)
 
 def init_hidden_weights(m):
     if isinstance(m, nn.Linear):
@@ -36,140 +38,128 @@ def softmax_layer(in_, out_):
         nn.Softmax(dim=-1)
     )
 
-def continuous_stochatic_layer(in_, out_):
-    return nn.ModuleList([nn.Sequential(
-        nn.Linear(in_, out_),
-        nn.Tanh()
-    ), nn.Sequential(
-        nn.Linear(in_, out_),
-        nn.Softplus()
-    )])
+def reduce_sequential(module):
+    return nn.Sequential(*[layer for layer in module.modules() if isinstance(layer, nn.Sequential) == False])
 
-
-def continuous_deterministic_layer(in_, out_):
-    return nn.ModuleList([nn.Sequential(nn.Linear(in_, out_))])
 
 class Policy(nn.Module):
-    def __init__(self, architecture, activation, action_space='discrete', deterministic=False):
+    def __init__(self, architecture, activation, action_space='discrete'):
         super(Policy, self).__init__()
-        activation_ = getattr(nn.modules.activation, activation)()
-        layers = [activated_layer(in_, out_, activation_) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
-        
-        self.layers = nn.Sequential(*layers)
-        self.layers.apply(init_hidden_weights)
+        self.num_inputs = architecture[0]
+        self.num_outputs = architecture[-1]
+        self.action_space = action_space
 
-        if action_space is 'discrete':
-            self.output = softmax_layer(architecture[-2], architecture[-1])
-            self.dist = torch.distributions.Categorical
-        elif action_space is 'continuous':
-            if deterministic:
-                self.output = continuous_deterministic_layer(architecture[-2], architecture[-1])
-                self.dist = lambda mu : mu
+        activation = getattr(nn.modules.activation, activation)()
+        layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
+        affine_layers = nn.Sequential(*layers)
+        affine_layers.apply(init_hidden_weights)
+
+        if self.action_space is 'discrete':
+            policy_output = softmax_layer(architecture[-2], self.num_outputs)
+            policy_output.apply(init_policy_weights)
+            policy_layers = nn.Sequential(layers, policy_output)
+        elif self.action_space is 'continuous':
+            action_mean = linear_layer(architecture[-2], self.num_outputs)
+            action_mean.apply(init_policy_weights)
+            policy_layers = nn.Sequential(affine_layers, action_mean)
+        self.policy = reduce_sequential(policy_layers)
+        self.action_std = nn.Parameter(torch.zeros(self.num_outputs))
+        # Keep Copy of old Policy for natural policy gradient methods
+        self.policy_old = deepcopy(self.policy)
+    
+    def forward(self, state, old=False):
+        if self.action_space is 'discrete':
+            if old:
+                probs = self.policy_old(state)
             else:
-                self.output = continuous_stochatic_layer(architecture[-2], architecture[-1])
-                self.dist = torch.distributions.Normal 
-            self.output.apply(init_output_weights)
-        else: 
-            raise NotImplementedError
-        
+                probs = self.policy(state)
+            dist = Categorical(probs)
+        if self.action_space is 'continuous':
+            if old:
+                mean = self.policy_old(state)
+            else:
+                mean = self.policy(state)
+            std = torch.exp(self.action_std.expand_as(mean))
+            dist = Normal(mean, std)
+        return dist
 
-    def forward(self, state):
-        x = state
-        x = self.layers(x)
-        params = []
-        for output in self.output:
-            params.append(output(x))
-        policy = self.dist(*params)
-        return policy
-
+    def backup(self):
+        self.policy_old.load_state_dict(self.policy.state_dict())
 
 
 class Value(nn.Module):
     def __init__(self, architecture, activation):
         super(Value, self).__init__()
-        activation_ = getattr(nn.modules.activation, activation)()
-        layers = [activated_layer(in_, out_, activation_) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
-        
-        self.layers = nn.Sequential(*layers)
-        self.layers.apply(init_hidden_weights)
+        self.num_inputs = architecture[0]
+        self.num_outputs = architecture[-1]
 
-        self.output = linear_layer(architecture[-2], architecture[-1])
-        self.output.apply(init_output_weights)
-        
+        activation = getattr(nn.modules.activation, activation)()
+        layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
+        affine_layers = nn.Sequential(*layers)
+        # affine_layers.apply(init_hidden_weights)
 
+        output_layer = linear_layer(architecture[-2], 1)
+        output_layer.apply(init_policy_weights)
+        
+        self.value = reduce_sequential(nn.Sequential(affine_layers, output_layer))
 
     def forward(self, state):
-        x = state
-        x = self.layers(x)
-        value = self.output(x)
-        return value
-
-
-
-class ActionValue(nn.Module):
-    def __init__(self, architecture, activation):
-        super(ActionValue, self).__init__()
-        self.activation = getattr(nn.modules.activation, activation)()
-        
-        self.state_input_layer = activated_layer(architecture[0], architecture[1], self.activation)
-        self.state_input_layer.apply(init_hidden_weights)
-
-        self.action_input_layer = activated_layer(architecture[1] + architecture[-1], architecture[2], self.activation)
-        self.action_input_layer.apply(init_hidden_weights)
-
-        if len(architecture) > 3:
-            layers = [activated_layer(in_, out_, self.activation) for in_, out_ in zip(architecture[2:-1], architecture[3:-1])]
-            self.layers = nn.Sequential(*layers)
-            self.layers.apply(init_hidden_weights)
-            self.output = linear_layer(architecture[-2], architecture[-1])
-            self.output.apply(init_output_weights)
-        else:
-            self.layers = nn.Sequential()
-            self.output = nn.Sequential()
-    
-    def forward(self, state, action):
-        x = state
-        out = self.state_input_layer(x)
-        out = self.action_input_layer(torch.cat([out,action]))
-        out = self.layers(out)
-        y = self.output(out)
-        return y
+        return self.value(state)
 
 
 
 class ActorCritic(nn.Module):
-    def __init__(self, architecture, activation, action_space='discrete', exploration=0.0):
+    def __init__(self, architecture, activation, action_space='discrete'):
         super(ActorCritic, self).__init__()
+        self.num_inputs = architecture[0]
+        self.num_outputs = architecture[-1]
         self.action_space = action_space
-        self.log_std = nn.Parameter(torch.ones(1, architecture[-1]) * exploration)
+
         activation = getattr(nn.modules.activation, activation)()
         layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
+        affine_layers = nn.Sequential(*layers)
+        affine_layers.apply(init_hidden_weights)
 
-        # Create Actor and Critic Network
-        critic_output = [linear_layer(architecture[-2], 1)]
-        critic_layers = layers + critic_output
+        value = linear_layer(architecture[-2], 1)
+        value.apply(init_output_weights)
+        critic_layers = nn.Sequential(affine_layers, value)
+        self.critic = reduce_sequential(critic_layers)
+
         if self.action_space is 'discrete':
-            actor_output = [softmax_layer(architecture[-2], architecture[-1])]
-            actor_layers = layers + actor_output
+            actor_output = softmax_layer(architecture[-2], architecture[-1])
+            actor_output.apply(init_policy_weights)
+            actor_layers = nn.Sequential(layers, actor_output)
         elif self.action_space is 'continuous':
-            actor_output = [linear_layer(architecture[-2], architecture[-1])]
-            actor_layers = layers + actor_output
-        else:
-            raise NotImplementedError
+            action_mean = linear_layer(architecture[-2], self.num_outputs)
+            action_mean.apply(init_policy_weights)
+            actor_layers = nn.Sequential(affine_layers, action_mean)
+        self.actor = reduce_sequential(actor_layers)
         
-        self.critic = nn.Sequential(*critic_layers)
-        self.actor = nn.Sequential(*actor_layers)
-        self.apply(init_weights_underTest)
+        self.action_std = nn.Parameter(torch.zeros(self.num_outputs))
 
-    def forward(self, state):
-        value = self.critic(state)
-        if self.action_space is 'discrete':
-            probs = self.actor(state)
-            dist = Categorical(probs)
-        if self.action_space is 'continuous':
-            mu = self.actor(state)
-            std = self.log_std.exp().squeeze().expand_as(mu)
-            dist = Normal(mu, std)
-        return dist, value
+        # Keep Copy of old Policy for natural policy gradient methods
+        self.actor_old = deepcopy(self.actor)
+
+    def forward(self, state, old=False):
+        value = self.value(state)
+        if old:
+            policy = self.policy(state, self.actor_old)
+        else:
+            policy = self.policy(state, self.actor)
+        return policy, value
     
+    def value(self, state):
+        return self.critic(state)
 
+    def policy(self, state, actor):
+        if self.action_space is 'discrete':
+            probs = actor(state)
+            dist = Categorical(probs)
+        elif self.action_space is 'continuous':
+            mean = actor(state)
+            std = torch.exp(self.action_std.expand_as(mean))
+            dist = Normal(mean, std)
+        return dist
+
+    def backup(self):
+        self.actor_old.load_state_dict(self.actor.state_dict())

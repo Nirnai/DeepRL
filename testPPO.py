@@ -105,15 +105,15 @@ class Agent():
     def update(self):
         self.training_step += 1
 
-        s = torch.tensor([t.s for t in self.buffer], dtype=torch.float)
-        a = torch.tensor([t.a for t in self.buffer], dtype=torch.float).view(-1, 1)
-        r = torch.tensor([t.r for t in self.buffer], dtype=torch.float).view(-1, 1)
-        s_ = torch.tensor([t.s_ for t in self.buffer], dtype=torch.float)
+        s = torch.Tensor([t.s for t in self.buffer]).float()
+        a = torch.Tensor([t.a for t in self.buffer]).float().view(-1, 1)
+        r = torch.Tensor([t.r for t in self.buffer]).float().view(-1, 1)
+        s_ = torch.Tensor([t.s_ for t in self.buffer]).float()
 
-        old_action_log_probs = torch.tensor(
-            [t.a_log_p for t in self.buffer], dtype=torch.float).view(-1, 1)
+        old_action_log_probs = torch.Tensor(
+            [t.a_log_p for t in self.buffer]).float().view(-1, 1)
 
-        r = (r - r.mean()) / (r.std() + 1e-5)
+        # r = (r - r.mean()) / (r.std() + 1e-5)
         with torch.no_grad():
             target_v = r + args.gamma * self.cnet(s_)
 
@@ -141,7 +141,7 @@ class Agent():
                 value_loss = F.smooth_l1_loss(self.cnet(s[index]), target_v[index])
                 self.optimizer_c.zero_grad()
                 value_loss.backward()
-                nn.utils.clip_grad_norm_(self.cnet.parameters(), self.max_grad_norm)
+                # nn.utils.clip_grad_norm_(self.cnet.parameters(), self.max_grad_norm)
                 self.optimizer_c.step()
 
         del self.buffer[:]
@@ -165,7 +165,8 @@ def main():
             state_, reward, done, _ = env.step([action])
             if args.render:
                 env.render()
-            if agent.store(Transition(state, action, action_log_prob, (reward + 8) / 8, state_)):
+            # if agent.store(Transition(state, action, action_log_prob, (reward + 8) / 8, state_)):
+            if agent.store(Transition(state, action, action_log_prob, reward, state_)):
                 agent.update()
             score += reward
             state = state_
@@ -188,7 +189,7 @@ def main():
     plt.title('PPO')
     plt.xlabel('Episode')
     plt.ylabel('Moving averaged episode reward')
-    plt.savefig("img/ppo.png")
+    # plt.savefig("img/ppo.png")
     plt.show()
 
 
