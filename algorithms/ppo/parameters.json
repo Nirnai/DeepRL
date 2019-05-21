@@ -1,10 +1,9 @@
 {
     "BATCH_SIZE": 5000,
-    "BUFFER_SIZE" : 100,
-    "GAMMA" : 0.995,
-    "LAMBDA" : 0.97,
-    "STEPS" : 200,
-    "LEARNING_RATE" : 1e-3,
+    "EPOCHS": 4,
+    "GAMMA" : 0.99,
+    "LAMBDA" : 0.95,
+    "LEARNING_RATE" : 1e-2,
     "ACTIVATION" : "ReLU",
     "ACTOR_ARCHITECTURE" : [
         4,

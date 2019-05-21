@@ -15,7 +15,7 @@ class Evaluation():
         # Logs
         self.curr_episode = 0
         self.episode_rewards = [0.0]
-        self.average_rewards = np.array([0.0])
+        self.average_rewards = np.array([])
         
         # Checks
         self.is_solved = False
@@ -33,12 +33,12 @@ class Evaluation():
     def reset(self):
         self.curr_episode = 1
         self.episode_rewards = [0.0]
-        self.average_rewards = np.array([0.0])
+        self.average_rewards = np.array([])
         self.is_solved = False
         self.results_generated = False
 
-    def show_progress(self):
-        if self.curr_episode % 10 == 0:
+    def show_progress(self, interval=10):
+        if self.curr_episode % interval == 0:
             print("Episode: {}".format(self.curr_episode))
             print("Average Reward: {}".format(self.average_rewards[-1]))
             print("Goal Average Reward: {}".format(self.goal_average_reward))
@@ -129,31 +129,27 @@ class Evaluation():
             seeds.append(rng.randint(0,100))
             env.seed(seeds[i])
             alg.seed(seeds[i])
+            episode = 0
             
             # reset environment
             self.reset()
             alg.reset()
             state = env.reset()
-            episode = 0
     
             for t in count():
-                # if render or episode > 3000:
-                #     env.render()
                 # Act
                 state, reward, done = alg.act(state)
                 # Eval
                 is_solved, episode = self.process(reward, done)
-                # Train/Finish
+                # Learn
+                loss = alg.learn()
+
+                self.show_progress(interval=1)
                 if is_solved:
                     # TODO: Evaluate the resulting policy
                     self.generate_results(results_path)
                     break
-                else:
-                    loss = alg.learn()
-
-                if done:
-                    state = env.reset()
-                    self.show_progress()
+                    
         self.param.SEED = seeds
         self.param.AVERAGING_WINDOW = self.avaraging_window
         self.param.save_parameters('{}/parameters.json'.format(results_path))

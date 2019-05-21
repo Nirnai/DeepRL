@@ -38,8 +38,14 @@ def softmax_layer(in_, out_):
         nn.Softmax(dim=-1)
     )
 
-def reduce_sequential(module):
-    return nn.Sequential(*[layer for layer in module.modules() if isinstance(layer, nn.Sequential) == False])
+def unwrap_layers(model):
+    l = []
+    def recursive_wrap(model):
+        for m in model.children():
+            if isinstance(m, nn.Sequential): recursive_wrap(m)
+            else: l.append(m)
+    recursive_wrap(model)
+    return nn.Sequential(*l)
 
 
 class Policy(nn.Module):
@@ -62,7 +68,7 @@ class Policy(nn.Module):
             action_mean = linear_layer(architecture[-2], self.num_outputs)
             action_mean.apply(init_policy_weights)
             policy_layers = nn.Sequential(affine_layers, action_mean)
-        self.policy = reduce_sequential(policy_layers)
+        self.policy = unwrap_layers(policy_layers)
         self.action_std = nn.Parameter(torch.zeros(self.num_outputs))
         # Keep Copy of old Policy for natural policy gradient methods
         self.policy_old = deepcopy(self.policy)
@@ -84,7 +90,8 @@ class Policy(nn.Module):
         return dist
 
     def backup(self):
-        self.policy_old.load_state_dict(self.policy.state_dict())
+        # self.policy_old.load_state_dict(self.policy.state_dict())
+        self.policy_old = deepcopy(self.policy)
 
 
 class Value(nn.Module):
@@ -96,12 +103,12 @@ class Value(nn.Module):
         activation = getattr(nn.modules.activation, activation)()
         layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
         affine_layers = nn.Sequential(*layers)
-        # affine_layers.apply(init_hidden_weights)
+        affine_layers.apply(init_hidden_weights)
 
         output_layer = linear_layer(architecture[-2], 1)
         output_layer.apply(init_policy_weights)
         
-        self.value = reduce_sequential(nn.Sequential(affine_layers, output_layer))
+        self.value = unwrap_layers(nn.Sequential(affine_layers, output_layer))
 
     def forward(self, state):
         return self.value(state)
@@ -123,7 +130,7 @@ class ActorCritic(nn.Module):
         value = linear_layer(architecture[-2], 1)
         value.apply(init_output_weights)
         critic_layers = nn.Sequential(affine_layers, value)
-        self.critic = reduce_sequential(critic_layers)
+        self.critic = unwrap_layers(critic_layers)
 
         if self.action_space is 'discrete':
             actor_output = softmax_layer(architecture[-2], architecture[-1])
@@ -133,7 +140,7 @@ class ActorCritic(nn.Module):
             action_mean = linear_layer(architecture[-2], self.num_outputs)
             action_mean.apply(init_policy_weights)
             actor_layers = nn.Sequential(affine_layers, action_mean)
-        self.actor = reduce_sequential(actor_layers)
+        self.actor = unwrap_layers(actor_layers)
         
         self.action_std = nn.Parameter(torch.zeros(self.num_outputs))
 

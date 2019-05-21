@@ -2,7 +2,22 @@ import numpy as np
 from collections import deque, namedtuple
 
 
-Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'done'))
+Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'mask'))
+
+class RolloutBuffer(object):
+    def __init__(self):
+        self.memory = []
+
+    def push(self, state, action, reward, next_state, mask):
+        """Saves a transition."""
+        self.memory.append(Transition(state, action, reward, next_state, mask))
+
+    def sample(self):
+        return Transition(*zip(*self.memory))
+
+    def __len__(self):
+        return len(self.memory)
+
 
 
 class ReplayBuffer(object):
@@ -21,7 +36,7 @@ class ReplayBuffer(object):
         action_batch = np.array(transitions.action)
         reward_batch = np.array(transitions.reward)
         next_state_batch = np.concatenate(transitions.next_state)
-        done_batch = np.float32(transitions.done)
+        done_batch = np.float32(transitions.mask)
         transitions = Transition(state_batch, 
                                  action_batch, 
                                  reward_batch, 
