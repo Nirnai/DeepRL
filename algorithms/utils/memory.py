@@ -2,7 +2,6 @@ import numpy as np
 from collections import deque, namedtuple
 
 
-
 class RolloutBuffer(object):
     def __init__(self):
         self.transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'mask'))

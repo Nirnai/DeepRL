@@ -8,11 +8,6 @@ import torch.nn.functional as F
 from algorithms.utils import ActorCritic, Policy, Value
 from algorithms.utils import RolloutBuffer
 from algorithms.utils import getEnvInfo
-from collections import namedtuple
-
-import time
-
-Transition = namedtuple('Transition', ('states', 'actions' ,'rewards', 'next_states', 'mask'))
 
 
 class PPO():
