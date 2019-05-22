@@ -5,7 +5,6 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.distributions as dist
 import torch.nn.functional as F
-# from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
 from algorithms.utils import ActorCritic, Policy, Value
 from algorithms.utils import RolloutBuffer
 from algorithms.utils import getEnvInfo
@@ -84,14 +83,13 @@ class PPO():
                 old_log_probs = old_policy.log_prob(actions).squeeze()
                 self.actor.backup()
 
-                # Optimize Policy
+                # Optimize Actor
                 self.actor_optim.zero_grad()
                 ratio = torch.exp(curr_log_probs - old_log_probs)
                 surr1 = ratio*advantages.detach()
                 surr2 = torch.clamp(ratio, 1.0 - 0.8,  1.2) * advantages.detach()
                 policy_loss = -torch.min(surr1, surr2).mean()
                 policy_loss.backward()
-                # torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 40)
                 self.actor_optim.step()
 
             del self.rolloutBuffer.memory[:]
