@@ -63,7 +63,7 @@ class Policy(nn.Module):
         if self.action_space is 'discrete':
             policy_output = softmax_layer(architecture[-2], self.num_outputs)
             policy_output.apply(init_policy_weights)
-            policy_layers = nn.Sequential(layers, policy_output)
+            policy_layers = nn.Sequential(affine_layers, policy_output)
         elif self.action_space is 'continuous':
             action_mean = linear_layer(architecture[-2], self.num_outputs)
             action_mean.apply(init_policy_weights)
