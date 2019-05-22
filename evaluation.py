@@ -13,7 +13,7 @@ class Evaluation():
         self.param = algorithm.param
         
         # Logs
-        self.curr_episode = 0
+        self.curr_episode = 1
         self.episode_rewards = [0.0]
         self.average_rewards = np.array([])
         
@@ -40,9 +40,9 @@ class Evaluation():
     def show_progress(self, interval=10):
         if self.curr_episode % interval == 0:
             print("Episode: {}".format(self.curr_episode))
-            print("Average Reward: {}".format(self.average_rewards[-1]))
+            print("Average Reward: {:.2f}".format(self.average_rewards[-1]))
             print("Goal Average Reward: {}".format(self.goal_average_reward))
-            print("Steps: {}".format(self.alg.steps))
+            print("Steps: {:,}".format(self.alg.steps))
             print("------------------------------------")
 
     def process(self, reward, done):
@@ -53,18 +53,18 @@ class Evaluation():
 
         for reward, done in zip(reward, done): 
             if done:
-                self.curr_episode += 1
                 # Compute new average reward
-                if len(self.episode_rewards) > self.avaraging_window:
-                    self.average_rewards = np.append(self.average_rewards, np.mean(self.episode_rewards[-self.avaraging_window - 1 : -1]))
-                else:
-                    self.average_rewards = np.append(self.average_rewards, np.mean(self.episode_rewards))
+                # if len(self.episode_rewards) > self.avaraging_window:
+                self.average_rewards = np.append(self.average_rewards, np.mean(self.episode_rewards[-self.avaraging_window:]))
+                # else:
+                    # self.average_rewards = np.append(self.average_rewards, np.mean(self.episode_rewards))
                 self.episode_rewards.append(0.0)
                 # Check for Termination
                 if self.episodes > 0:
                     self.is_solved = self.curr_episode == self.episodes
                 else:
                     self.is_solved = self.average_rewards[-1] >= self.goal_average_reward    
+                self.curr_episode += 1
             else:
                 self.episode_rewards[-1] += reward
         return self.is_solved, self.curr_episode
@@ -119,8 +119,8 @@ class Evaluation():
         plt.legend()
         plt.savefig('{}/{}_stat.png'.format(path,filename))
 
-    def evaluate_algorithm(self, alg, param, env, results_path, samples=10, seed=0, render=False):
-        
+    def evaluate_algorithm(self, alg, param, env, results_path, episodes=1000, samples=10, seed=0, render=False):
+        self.episodes = episodes
         rng = random.Random(seed)
         seeds = []
 
@@ -129,13 +129,13 @@ class Evaluation():
             seeds.append(rng.randint(0,100))
             env.seed(seeds[i])
             alg.seed(seeds[i])
-            episode = 0
+            # episode = 0
             
             # reset environment
             self.reset()
             alg.reset()
+
             state = env.reset()
-    
             for t in count():
                 # Act
                 state, reward, done = alg.act(state)
@@ -144,7 +144,7 @@ class Evaluation():
                 # Learn
                 loss = alg.learn()
 
-                self.show_progress(interval=1)
+                self.show_progress(interval=25)
                 if is_solved:
                     # TODO: Evaluate the resulting policy
                     self.generate_results(results_path)
