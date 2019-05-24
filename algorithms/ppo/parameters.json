@@ -5,7 +5,7 @@
     "LAMBDA" : 0.95,
     "LEARNING_RATE" : 1e-2,
     "ACTIVATION" : "ReLU",
-    "ACTOR_ARCHITECTURE" : [
+    "ARCHITECTURE" : [
         4,
         64,
         64,

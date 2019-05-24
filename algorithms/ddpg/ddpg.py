@@ -5,10 +5,10 @@ import torch.nn as nn
 import torch.optim as optim
 from collections import namedtuple
 # from algorithms.utils import Policy, ActionValue
-from algorithms.utils import hard_target_update, soft_target_update
-from algorithms.utils import ReplayBuffer
-from algorithms.utils import getEnvInfo
-from algorithms.utils import OrnsteinUhlbeckNoise
+from utils.helper import hard_target_update, soft_target_update
+from utils.memory import ReplayBuffer
+from utils.env import getEnvInfo
+from utils.noise import OrnsteinUhlbeckNoise
 
 class DDPG():
     def __init__(self, env, param):

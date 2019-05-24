@@ -1,5 +1,9 @@
-from algorithms.dqn.dqn import DQN
-from algorithms.pg.pg import PG
-from algorithms.ddpg.ddpg import DDPG
-# from algorithms.a2c.a2c import A2C
-from algorithms.ppo.ppo import PPO
+from .hyperparameter import HyperParameter
+from .base import RLAlgorithm
+
+from .dqn import *
+from .ddpg import *
+from .pg import *
+from .ppo import *
+from .trpo import *
+

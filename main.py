@@ -1,9 +1,7 @@
 import itertools
 import gym 
-from algorithms import PPO
+from algorithms import PPO, TRPO
 from evaluation import Evaluation
-from hyperparameter import HyperParameter
-
 
 
 if __name__ == '__main__':
@@ -17,19 +15,21 @@ if __name__ == '__main__':
     # env = gym.make('MountainCarContinuous-v0')
     # env = gym.make('MountainCar-v0')
     # Hyperparameters
-    filepath = 'algorithms/ppo/parameters.json'
-    param = HyperParameter(filepath)
+    # filepath = 'algorithms/ppo/parameters.json'
+    # param = HyperParameter(filepath)
     
     # RL Algorithm
     # alg = PG(env, param)
     # alg = DQN(env, param)
     # alg = A2C(env, param)
-    alg = PPO(env, param)
+    # alg = PPO(env)
     # alg = DDPG(env, param)
+    alg = TRPO(env)
 
     # Evaluation
     evaluator = Evaluation(env, alg)
-    # evaluator.evaluate_algorithm(alg, param, env, 'test/output_data', episodes=2000, seed=1)
+    # evaluator.evaluate_algorithm(alg, env, 'test/output_data', episodes=2000, seed=1)
+
 
     state = env.reset()
     for t in itertools.count():

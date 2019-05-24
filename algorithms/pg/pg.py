@@ -5,8 +5,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.distributions as dist
-from algorithms.utils import Policy
-from algorithms.utils import getEnvInfo
+from utils.models import Policy
+from utils.env import getEnvInfo
 from itertools import accumulate
 
 class PG():

@@ -4,6 +4,8 @@ import torch.nn.functional as F
 from torch.distributions import Normal, Categorical
 from copy import deepcopy
 
+__all__ = ['Value', 'Policy']
+
 def init_policy_weights(m):
     if isinstance(m, nn.Linear):
         m.weight.data.mul_(0.1)
