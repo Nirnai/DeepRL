@@ -22,9 +22,9 @@ if __name__ == '__main__':
     # alg = PG(env, param)
     # alg = DQN(env, param)
     # alg = A2C(env, param)
-    # alg = PPO(env)
+    alg = PPO(env)
     # alg = DDPG(env, param)
-    alg = TRPO(env)
+    # alg = TRPO(env)
 
     # Evaluation
     evaluator = Evaluation(env, alg)
@@ -41,7 +41,7 @@ if __name__ == '__main__':
         alg.learn()
         # Visualize Progress
         if done:
-            evaluator.show_progress(interval=25)
+            evaluator.show_progress(interval=26)
         if is_solved:
             evaluator.generate_results('test/output_data')
             break

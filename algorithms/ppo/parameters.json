@@ -6,10 +6,10 @@
     "LEARNING_RATE" : 1e-2,
     "ACTIVATION" : "ReLU",
     "ARCHITECTURE" : [
-        4,
+        3,
         64,
         64,
-        2
+        1
     ],
     "SEED" : null
 }

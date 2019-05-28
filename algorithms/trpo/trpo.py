@@ -9,6 +9,8 @@ import torch.optim as optim
 import torch.distributions as dist
 import torch.nn.functional as F
 
+from copy import deepcopy
+from torch.distributions import kl_divergence
 from algorithms import RLAlgorithm, HyperParameter
 from utils.models import Policy, Value
 from utils.memory import RolloutBuffer
@@ -28,6 +30,7 @@ class TRPO(RLAlgorithm):
         activation = self.param.ACTIVATION
 
         self.actor = Policy(architecture, activation, action_space=self.action_space)
+        self.actor_old = deepcopy(self.actor)
         self.actor_optim = optim.Adam(self.actor.parameters(), lr=self.param.LEARNING_RATE)
         self.critic = Value(architecture, activation)
         self.critic_optim = optim.Adam(self.critic.parameters(), lr = self.param.LEARNING_RATE)
@@ -63,44 +66,53 @@ class TRPO(RLAlgorithm):
 
             advantages = self.gae(states, next_states[-1], rewards, mask)
             
-            # Optimizer Critic
+            # Optimize Critic            
             self.critic_optim.zero_grad()
             value_loss = advantages.pow(2.).mean()
             value_loss.backward()
             self.critic_optim.step()
 
+            ####
             advantages = (advantages - advantages.mean()) / advantages.std()
+            advantages = advantages.detach()
             
             p = self.actor(states)
-            p_old = self.actor(states, old=True)
+            with torch.no_grad():
+                p_old = self.actor_old(states)
+            d_kl = kl_divergence(p, p_old).mean()
+
+            # Compute Hessian Vector Product
+            def Hx(x):
+                # TODO: Possibility of damping
+                grads = torch.autograd.grad(d_kl, self.actor.parameters(), create_graph=True),
+                grads = torch.cat([grad.view(-1) for grad in grads])
+                Jx = (grads * x).sum()
+                Hx = torch.autograd.grad(Jx, self.actor.parameters())
+                Hx = torch.cat([grad.view(-1) for grad in Hx])
+                return Hx 
+
 
             log_probs = p.log_prob(actions).squeeze()
-            log_probs_old = p_old.log_prob(actions).squeeze()            
+            log_probs_old = p_old.log_prob(actions).squeeze() 
 
             ratio = torch.exp(log_probs - log_probs_old)
-            policy_loss = (- ratio * advantages.detach()).mean()
-            policy_gradient = torch.autograd.grad(policy_loss, self.actor.parameters())
-            policy_gradient_vector = torch.cat([grad.view(-1) for grad in policy_gradient]) 
+            loss = (- ratio * advantages).mean()
 
-            d_kl = dist.kl.kl_divergence(p, p_old).mean()
-            x = self.conjugate_gradient(d_kl, policy_gradient_vector)
+            grads = torch.autograd.grad(loss, self.actor.parameters())
+
+            gradient = self.actor.get_grads(loss)
+            stepdir = self.conjugate_gradient(Hx, gradient)
             
             delta = self.param.DELTA
-            natural_gradient = (2 * delta) / torch.dot(x,self.Hx(d_kl,x))
-            natural_gradient = torch.sqrt(natural_gradient) * x
-            
-            
-            # self.actor.backup()
-            # # Optimize Policy
-            # self.actor_optim.zero_grad()
-            # ratio = torch.exp(curr_log_probs - old_log_probs)
-            # surr1 = ratio*advantages.detach()
-            # surr2 = torch.clamp(ratio, 1.0 - 0.8,  1.2) * advantages.detach()
-            # policy_loss = -torch.min(surr1, surr2).mean()
-            # policy_loss.backward()
-            # # torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 40)
-            # self.actor_optim.step()
+            natural_gradient = (2 * delta) / torch.dot(stepdir,self.Hx(states, stepdir))
+            natural_gradient = torch.sqrt(natural_gradient) * stepdir
 
+            
+            # params = self.linesearch()
+
+            for param in self.actor.parameters():
+                param.data -= natural_gradient
+           
             del self.rolloutBuffer.memory[:]
 
 
@@ -117,23 +129,19 @@ class TRPO(RLAlgorithm):
         return torch.stack(advantages[:-1])
 
 
-    def Hx(self, f, x):
-        grads = torch.autograd.grad(f, self.actor.parameters(), create_graph=True)
-        Jv = (grads * x).sum()
-        Hv = torch.autograd.grad(Jv, self.actor.parameters())
-        return Hv
-
-
-    def conjugate_gradient(self, f, g):
-        x = torch.zeros(g.size())
-        r = g.clone()
+    def conjugate_gradient(self, A, b):
+        x = torch.zeros(b.size())
+        r = b.clone()
         p = r.clone()
         rs = torch.dot(r,r)
-        for i in range(4 * g.shape[0]):
-            Hp = self.Hx(f,p)
-            alpha = rs/(torch.dot(p, Hp))
+        for i in range(b.shape[0]):
+            if callable(A):
+                Ap = A(p)
+            else:
+                Ap = torch.matmul(A,p)
+            alpha = rs/(torch.dot(p, Ap))
             x += alpha * p
-            r -= alpha * Hp
+            r -= alpha * Ap
             rs_next = torch.dot(r, r)
             betta = rs_next / rs
             p = r + betta * p
@@ -141,3 +149,11 @@ class TRPO(RLAlgorithm):
             if rs < 1e-10:
                 break
         return x
+
+    def linesearch(self, params, natural_gradient, advantages):
+        # number of backtracks
+        alpha = 0.5
+        for k in range(10):
+            params_new = params + alpha**k * natural_gradient
+
+        return params_new

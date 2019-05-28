@@ -8,6 +8,7 @@ import torch.optim as optim
 import torch.distributions as dist
 import torch.nn.functional as F
 # from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
+from copy import deepcopy
 from utils.models import Policy, Value
 from utils.memory import RolloutBuffer
 from utils.env import getEnvInfo
@@ -28,6 +29,7 @@ class PPO(RLAlgorithm):
             self.seed(self.param.SEED)
 
         self.actor = Policy(architecture, activation, action_space=self.action_space)
+        self.actor_old = deepcopy(self.actor)
         self.actor_optim = optim.Adam(self.actor.parameters(), lr=self.param.LEARNING_RATE)
         self.critic = Value(architecture, activation)
         self.critic_optim = optim.Adam(self.critic.parameters(), lr = self.param.LEARNING_RATE)
@@ -67,11 +69,13 @@ class PPO(RLAlgorithm):
                 value_loss = advantages.pow(2.).mean()
                 value_loss.backward()
                 self.critic_optim.step()
-                old_policy = self.actor(states, old=True)
-                old_log_probs = old_policy.log_prob(actions).squeeze()
+
+                with torch.no_grad():
+                    old_policy = self.actor_old(states)
+                    old_log_probs = old_policy.log_prob(actions).squeeze()   
                 curr_policy = self.actor(states)
                 curr_log_probs = curr_policy.log_prob(actions).squeeze()
-                self.actor.backup()
+                self.actor_old.load_state_dict(self.actor.state_dict())
 
                 # Optimize Policy
                 self.actor_optim.zero_grad()

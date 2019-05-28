@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions import Normal, Categorical
+from torch.distributions import Normal, Categorical, kl_divergence
 from copy import deepcopy
 
 __all__ = ['Value', 'Policy']
@@ -71,29 +71,29 @@ class Policy(nn.Module):
             action_mean.apply(init_policy_weights)
             policy_layers = nn.Sequential(affine_layers, action_mean)
         self.policy = unwrap_layers(policy_layers)
-        self.action_std = nn.Parameter(torch.zeros(self.num_outputs))
-        # Keep Copy of old Policy for natural policy gradient methods
-        self.policy_old = deepcopy(self.policy)
+        self.action_log_std = nn.Parameter(torch.zeros(self.num_outputs))
     
-    def forward(self, state, old=False):
+    def forward(self, state):
         if self.action_space is 'discrete':
-            if old:
-                probs = self.policy_old(state)
-            else:
-                probs = self.policy(state)
+            probs = self.policy(state)
             dist = Categorical(probs)
         if self.action_space is 'continuous':
-            if old:
-                mean = self.policy_old(state)
-            else:
-                mean = self.policy(state)
-            std = torch.exp(self.action_std.expand_as(mean))
+            mean = self.policy(state)
+            std = torch.exp(self.action_log_std.expand_as(mean))
             dist = Normal(mean, std)
         return dist
 
-    def backup(self):
-        # self.policy_old.load_state_dict(self.policy.state_dict())
-        self.policy_old = deepcopy(self.policy)
+    def get_grads(self, loss):
+        grads = torch.autograd.grad(loss, self.parameters(), allow_unused=True)
+        # TODO: Missmatch of dim to parameters
+        grads = [torch.Tensor([0]) if grad is None else grad for grad in grads]
+        grads_flat = torch.cat([grad.view(-1) for grad in grads]).detach() 
+        return grads_flat
+    
+    def get_params(self):
+        params = self.state_dict().values()
+        params = torch.cat([param.view(-1) for param in params])
+        return params
 
 
 class Value(nn.Module):
