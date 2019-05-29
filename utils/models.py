@@ -1,8 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions import Normal, Categorical
+from torch.distributions import Normal, Categorical, kl_divergence
+from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from copy import deepcopy
+
+__all__ = ['Value', 'Policy']
 
 def init_policy_weights(m):
     if isinstance(m, nn.Linear):
@@ -69,29 +72,29 @@ class Policy(nn.Module):
             action_mean.apply(init_policy_weights)
             policy_layers = nn.Sequential(affine_layers, action_mean)
         self.policy = unwrap_layers(policy_layers)
-        self.action_std = nn.Parameter(torch.zeros(self.num_outputs))
-        # Keep Copy of old Policy for natural policy gradient methods
-        self.policy_old = deepcopy(self.policy)
+        self.action_log_std = nn.Parameter(torch.zeros(self.num_outputs))
     
-    def forward(self, state, old=False):
+    def forward(self, state):
         if self.action_space is 'discrete':
-            if old:
-                probs = self.policy_old(state)
-            else:
-                probs = self.policy(state)
+            probs = self.policy(state)
             dist = Categorical(probs)
         if self.action_space is 'continuous':
-            if old:
-                mean = self.policy_old(state)
-            else:
-                mean = self.policy(state)
-            std = torch.exp(self.action_std.expand_as(mean))
+            mean = self.policy(state)
+            std = torch.exp(self.action_log_std.expand_as(mean))
             dist = Normal(mean, std)
         return dist
 
-    def backup(self):
-        # self.policy_old.load_state_dict(self.policy.state_dict())
-        self.policy_old = deepcopy(self.policy)
+    def get_grads(self, loss):
+        with torch.no_grad():
+            grads = torch.autograd.grad(loss, self.parameters())
+        return parameters_to_vector(grads)
+    
+    def get_params(self):
+        return parameters_to_vector(self.parameters())
+    
+    def set_params(self, flat_params):
+        vector_to_parameters(flat_params, self.parameters())
+        
 
 
 class Value(nn.Module):
@@ -114,59 +117,22 @@ class Value(nn.Module):
         return self.value(state)
 
 
-
-class ActorCritic(nn.Module):
-    def __init__(self, architecture, activation, action_space='discrete'):
-        super(ActorCritic, self).__init__()
-        self.num_inputs = architecture[0]
+class QValue(nn.Module):
+    def __init__(self, architecture, activation):
+        super(QValue, self).__init__()
+        self.num_inputs = architecture[0] + architecture[-1]
         self.num_outputs = architecture[-1]
-        self.action_space = action_space
 
         activation = getattr(nn.modules.activation, activation)()
         layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
         affine_layers = nn.Sequential(*layers)
         affine_layers.apply(init_hidden_weights)
 
-        value = linear_layer(architecture[-2], 1)
-        value.apply(init_output_weights)
-        critic_layers = nn.Sequential(affine_layers, value)
-        self.critic = unwrap_layers(critic_layers)
-
-        if self.action_space is 'discrete':
-            actor_output = softmax_layer(architecture[-2], architecture[-1])
-            actor_output.apply(init_policy_weights)
-            actor_layers = nn.Sequential(layers, actor_output)
-        elif self.action_space is 'continuous':
-            action_mean = linear_layer(architecture[-2], self.num_outputs)
-            action_mean.apply(init_policy_weights)
-            actor_layers = nn.Sequential(affine_layers, action_mean)
-        self.actor = unwrap_layers(actor_layers)
+        output_layer = linear_layer(architecture[-2], 1)
+        output_layer.apply(init_policy_weights)
         
-        self.action_std = nn.Parameter(torch.zeros(self.num_outputs))
+        self.qvalue = unwrap_layers(nn.Sequential(affine_layers, output_layer))
 
-        # Keep Copy of old Policy for natural policy gradient methods
-        self.actor_old = deepcopy(self.actor)
-
-    def forward(self, state, old=False):
-        value = self.value(state)
-        if old:
-            policy = self.policy(state, self.actor_old)
-        else:
-            policy = self.policy(state, self.actor)
-        return policy, value
-    
-    def value(self, state):
-        return self.critic(state)
-
-    def policy(self, state, actor):
-        if self.action_space is 'discrete':
-            probs = actor(state)
-            dist = Categorical(probs)
-        elif self.action_space is 'continuous':
-            mean = actor(state)
-            std = torch.exp(self.action_std.expand_as(mean))
-            dist = Normal(mean, std)
-        return dist
-
-    def backup(self):
-        self.actor_old.load_state_dict(self.actor.state_dict())
+    def forward(self, state, action):
+        in_ = torch.cat([state,action], dim=1)
+        return self.qvalue(in_)

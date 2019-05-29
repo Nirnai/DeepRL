@@ -2,7 +2,7 @@ import os
 import pytest
 import torch
 import yaml
-from hyperparameter import HyperParameter
+from algorithms.hyperparameter import HyperParameter
 
 def test_json_parser():
     save_param = HyperParameter()

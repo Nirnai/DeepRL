@@ -5,11 +5,12 @@
     "LAMBDA" : 0.95,
     "LEARNING_RATE" : 1e-2,
     "ACTIVATION" : "ReLU",
-    "ACTOR_ARCHITECTURE" : [
-        4,
+    "ARCHITECTURE" : [
+        3,
         64,
         64,
-        2
+        1
     ],
-    "SEED" : null
+    "SEED" : null, 
+    "CLIP" : 0.2
 }

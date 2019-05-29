@@ -1,3 +1,5 @@
+import os
+import inspect
 import random 
 import numpy 
 import torch
@@ -5,23 +7,22 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.distributions as dist
 import torch.nn.functional as F
-from algorithms.utils import ActorCritic, Policy, Value
-from algorithms.utils import RolloutBuffer
-from algorithms.utils import getEnvInfo
+# from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
+from copy import deepcopy
+from utils.models import Policy, Value
+from utils.memory import RolloutBuffer
+from utils.env import getEnvInfo
+from algorithms import RLAlgorithm, HyperParameter
 
-
-class PPO():
-    def __init__(self, env, param):
+class PPO(RLAlgorithm):
+    def __init__(self, env):
+        super(PPO, self).__init__(env)
         self.name = "PPO"
-        self.env = env
-        self.param = param
-        self.rng = random.Random()
-
-        self.state_dim, self.action_dim, self.action_space = getEnvInfo(env)
-        self.param.ACTOR_ARCHITECTURE[0] = self.state_dim
-        self.param.ACTOR_ARCHITECTURE[-1] = self.action_dim
-
-        architecture = self.param.ACTOR_ARCHITECTURE
+        parameters_file = os.path.dirname(inspect.getfile(self.__class__)) + '/parameters.json'
+        self.param = HyperParameter(parameters_file)
+        self.param.ARCHITECTURE[ 0 ] = self.state_dim
+        self.param.ARCHITECTURE[-1 ] = self.action_dim
+        architecture = self.param.ARCHITECTURE
         activation = self.param.ACTIVATION
 
         if self.param.SEED != None:
@@ -29,10 +30,8 @@ class PPO():
 
         self.actor = Policy(architecture, activation, action_space=self.action_space)
         self.actor_optim = optim.Adam(self.actor.parameters(), lr=self.param.LEARNING_RATE)
-
         self.critic = Value(architecture, activation)
         self.critic_optim = optim.Adam(self.critic.parameters(), lr = self.param.LEARNING_RATE)
-
         self.rolloutBuffer = RolloutBuffer()
 
         self.steps = 0
@@ -55,38 +54,38 @@ class PPO():
 
     def learn(self):
         if self.steps % self.param.BATCH_SIZE == 0:
-            for _ in range(4):
-                batch = self.rolloutBuffer.sample()
-                states = torch.Tensor(batch.state)
-                actions = torch.stack(batch.action)
-                rewards = torch.Tensor(batch.reward)
-                next_states = torch.Tensor(batch.next_state)
-                mask = torch.Tensor(batch.mask)
+            batch = self.rolloutBuffer.sample()
+            states = torch.Tensor(batch.state)
+            actions = torch.stack(batch.action)
+            rewards = torch.Tensor(batch.reward)
+            next_states = torch.Tensor(batch.next_state)
+            mask = torch.Tensor(batch.mask)
 
+            for _ in range(4):
                 advantages = self.gae(states, next_states[-1], rewards, mask)
-                
+                advantages = (advantages - advantages.mean()) / advantages.std()
                 # Optimizer Critic
                 self.critic_optim.zero_grad()
                 value_loss = advantages.pow(2.).mean()
                 value_loss.backward()
                 self.critic_optim.step()
 
-                advantages = (advantages - advantages.mean()) / advantages.std()
+                with torch.no_grad():
+                    actor_old = deepcopy(self.actor)
+                    old_policy = actor_old(states)
+                    old_log_probs = old_policy.log_prob(actions).squeeze()       
+
                 curr_policy = self.actor(states)
                 curr_log_probs = curr_policy.log_prob(actions).squeeze()
-                old_policy = self.actor(states, old=True)
-                old_log_probs = old_policy.log_prob(actions).squeeze()
-                self.actor.backup()
 
                 # Optimize Actor
                 self.actor_optim.zero_grad()
                 ratio = torch.exp(curr_log_probs - old_log_probs)
-                surr1 = ratio*advantages.detach()
-                surr2 = torch.clamp(ratio, 1.0 - 0.8,  1.2) * advantages.detach()
+                surr1 = ratio * advantages.detach()
+                surr2 = torch.clamp(ratio, 1 - self.param.CLIP,  1 + self.param.CLIP) * advantages.detach()
                 policy_loss = -torch.min(surr1, surr2).mean()
                 policy_loss.backward()
                 self.actor_optim.step()
-
             del self.rolloutBuffer.memory[:]
 
 
@@ -110,4 +109,4 @@ class PPO():
         self.rng = random.Random(self.param.SEED)
 
     def reset(self):
-        self.__init__(self.env, self.param)
+        self.__init__(self.env)

@@ -119,21 +119,22 @@ class Evaluation():
         plt.legend()
         plt.savefig('{}/{}_stat.png'.format(path,filename))
 
-    def evaluate_algorithm(self, alg, param, env, results_path, episodes=1000, samples=10, seed=0, render=False):
+    def evaluate_algorithm(self, alg, env, results_path, episodes=1000, samples=10, seed=0, render=False):
         self.episodes = episodes
         rng = random.Random(seed)
         seeds = []
 
         for i in range(samples):
+            # reset environment
+            self.reset()
+            alg.reset()
+
             # Setting new seeds
             seeds.append(rng.randint(0,100))
             env.seed(seeds[i])
             alg.seed(seeds[i])
             # episode = 0
             
-            # reset environment
-            self.reset()
-            alg.reset()
 
             state = env.reset()
             for t in count():
@@ -144,7 +145,8 @@ class Evaluation():
                 # Learn
                 loss = alg.learn()
 
-                self.show_progress(interval=25)
+                if done:
+                    self.show_progress(interval=25)
                 if is_solved:
                     # TODO: Evaluate the resulting policy
                     self.generate_results(results_path)
