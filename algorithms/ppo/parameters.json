@@ -11,5 +11,6 @@
         64,
         1
     ],
-    "SEED" : null
+    "SEED" : null, 
+    "CLIP" : 0.2
 }

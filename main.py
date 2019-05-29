@@ -22,9 +22,9 @@ if __name__ == '__main__':
     # alg = PG(env, param)
     # alg = DQN(env, param)
     # alg = A2C(env, param)
-    # alg = PPO(env)
+    alg = PPO(env)
     # alg = DDPG(env, param)
-    alg = TRPO(env)
+    # alg = TRPO(env)
 
     # Evaluation
     evaluator = Evaluation(env, alg)

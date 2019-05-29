@@ -29,7 +29,6 @@ class PPO(RLAlgorithm):
             self.seed(self.param.SEED)
 
         self.actor = Policy(architecture, activation, action_space=self.action_space)
-        self.actor_old = deepcopy(self.actor)
         self.actor_optim = optim.Adam(self.actor.parameters(), lr=self.param.LEARNING_RATE)
         self.critic = Value(architecture, activation)
         self.critic_optim = optim.Adam(self.critic.parameters(), lr = self.param.LEARNING_RATE)
@@ -64,6 +63,7 @@ class PPO(RLAlgorithm):
 
             for _ in range(4):
                 advantages = self.gae(states, next_states[-1], rewards, mask)
+                advantages = (advantages - advantages.mean()) / advantages.std()
                 # Optimizer Critic
                 self.critic_optim.zero_grad()
                 value_loss = advantages.pow(2.).mean()
@@ -71,23 +71,22 @@ class PPO(RLAlgorithm):
                 self.critic_optim.step()
 
                 with torch.no_grad():
-                    old_policy = self.actor_old(states)
-                    old_log_probs = old_policy.log_prob(actions).squeeze()   
+                    actor_old = deepcopy(self.actor)
+                    old_policy = actor_old(states)
+                    old_log_probs = old_policy.log_prob(actions).squeeze()       
+
                 curr_policy = self.actor(states)
                 curr_log_probs = curr_policy.log_prob(actions).squeeze()
-                self.actor_old.load_state_dict(self.actor.state_dict())
 
                 # Optimize Policy
                 self.actor_optim.zero_grad()
-                advantages = (advantages - advantages.mean()) / advantages.std()
                 ratio = torch.exp(curr_log_probs - old_log_probs)
-                surr1 = ratio*advantages.detach()
-                surr2 = torch.clamp(ratio, 1.0 - 0.8,  1.2) * advantages.detach()
+                surr1 = ratio * advantages.detach()
+                surr2 = torch.clamp(ratio, 1 - self.param.CLIP,  1 + self.param.CLIP) * advantages.detach()
                 policy_loss = -torch.min(surr1, surr2).mean()
                 policy_loss.backward()
                 # torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 40)
                 self.actor_optim.step()
-
             del self.rolloutBuffer.memory[:]
 
 
