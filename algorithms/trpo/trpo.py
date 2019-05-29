@@ -10,7 +10,8 @@ import torch.distributions as dist
 import torch.nn.functional as F
 
 from copy import deepcopy
-from torch.distributions import kl_divergence
+from torch.distributions.kl import kl_divergence
+from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from algorithms import RLAlgorithm, HyperParameter
 from utils.models import Policy, Value
 from utils.memory import RolloutBuffer
@@ -30,13 +31,9 @@ class TRPO(RLAlgorithm):
         activation = self.param.ACTIVATION
 
         self.actor = Policy(architecture, activation, action_space=self.action_space)
-        self.actor_old = deepcopy(self.actor)
-        self.actor_optim = optim.Adam(self.actor.parameters(), lr=self.param.LEARNING_RATE)
         self.critic = Value(architecture, activation)
         self.critic_optim = optim.Adam(self.critic.parameters(), lr = self.param.LEARNING_RATE)
         self.rolloutBuffer = RolloutBuffer()
-
-
         self.steps = 0
         self.done = False
 
@@ -64,55 +61,41 @@ class TRPO(RLAlgorithm):
             next_states = torch.Tensor(batch.next_state)
             mask = torch.Tensor(batch.mask)
 
-            advantages = self.gae(states, next_states[-1], rewards, mask)
-            
-            # Optimize Critic            
+            advantages = self.gae(states, next_states[-1], rewards, mask)   
+            advantages = (advantages - advantages.mean()) / advantages.std()  
+
             self.critic_optim.zero_grad()
             value_loss = advantages.pow(2.).mean()
             value_loss.backward()
-            self.critic_optim.step()
+            self.critic_optim.step() 
 
-            ####
-            advantages = (advantages - advantages.mean()) / advantages.std()
             advantages = advantages.detach()
-            
             p = self.actor(states)
-            with torch.no_grad():
-                p_old = self.actor_old(states)
-            d_kl = kl_divergence(p, p_old).mean()
-
-            # Compute Hessian Vector Product
-            def Hx(x):
-                # TODO: Possibility of damping
-                grads = torch.autograd.grad(d_kl, self.actor.parameters(), create_graph=True),
-                grads = torch.cat([grad.view(-1) for grad in grads])
-                Jx = (grads * x).sum()
-                Hx = torch.autograd.grad(Jx, self.actor.parameters())
-                Hx = torch.cat([grad.view(-1) for grad in Hx])
-                return Hx 
-
-
             log_probs = p.log_prob(actions).squeeze()
-            log_probs_old = p_old.log_prob(actions).squeeze() 
+            loss = (log_probs * advantages).mean()
+            pg = parameters_to_vector(torch.autograd.grad(loss, self.actor.parameters()))
 
-            ratio = torch.exp(log_probs - log_probs_old)
-            loss = (- ratio * advantages).mean()
-
-            grads = torch.autograd.grad(loss, self.actor.parameters())
-
-            gradient = self.actor.get_grads(loss)
-            stepdir = self.conjugate_gradient(Hx, gradient)
+            def get_kl(model):
+                with torch.no_grad():
+                    p_old = self.actor(states)
+                p_new = model(states)
+                d_kl = kl_divergence(p_old, p_new).mean()
+                return d_kl
             
-            delta = self.param.DELTA
-            natural_gradient = (2 * delta) / torch.dot(stepdir,self.Hx(states, stepdir))
-            natural_gradient = torch.sqrt(natural_gradient) * stepdir
+            def Hx(x):
+                d_kl = get_kl(self.actor)    
+                grads = torch.autograd.grad(d_kl, self.actor.parameters(), create_graph=True)
+                grads = parameters_to_vector(grads)
+                Jx = torch.sum(grads * x)
+                Hx = torch.autograd.grad(Jx, self.actor.parameters())
+                Hx = parameters_to_vector(Hx)
+                return Hx + 0.1 * x
 
-            
-            # params = self.linesearch()
-
-            for param in self.actor.parameters():
-                param.data -= natural_gradient
-           
+            stepdir = self.conjugate_gradient(Hx, pg, self.param.NUM_CG_ITER)  
+            stepsize = (2 * self.param.DELTA) / torch.dot(stepdir,Hx(stepdir))
+            npg = torch.sqrt(stepsize) * stepdir
+            params_new = self.linesearch(npg, pg, get_kl)
+            vector_to_parameters(params_new, self.actor.parameters())
             del self.rolloutBuffer.memory[:]
 
 
@@ -129,17 +112,17 @@ class TRPO(RLAlgorithm):
         return torch.stack(advantages[:-1])
 
 
-    def conjugate_gradient(self, A, b):
-        x = torch.zeros(b.size())
+    def conjugate_gradient(self, A, b, n):
+        x = torch.zeros_like(b)
         r = b.clone()
         p = r.clone()
         rs = torch.dot(r,r)
-        for i in range(b.shape[0]):
+        for i in range(n):
             if callable(A):
                 Ap = A(p)
             else:
                 Ap = torch.matmul(A,p)
-            alpha = rs/(torch.dot(p, Ap))
+            alpha = rs / torch.dot(p, Ap)
             x += alpha * p
             r -= alpha * Ap
             rs_next = torch.dot(r, r)
@@ -150,10 +133,27 @@ class TRPO(RLAlgorithm):
                 break
         return x
 
-    def linesearch(self, params, natural_gradient, advantages):
-        # number of backtracks
-        alpha = 0.5
-        for k in range(10):
-            params_new = params + alpha**k * natural_gradient
+    def linesearch(self, npg, pg, get_kl):
+        params_curr = self.actor.get_params()
+        for k in range(self.param.NUM_BACKTRACK):
+            params_new = params_curr + self.param.ALPHA**k * npg 
+            model_new = deepcopy(self.actor)
+            vector_to_parameters(params_new, model_new.parameters())
+            param_diff = params_new - params_curr
+            surr_loss = torch.dot(pg,param_diff)
+            kl_div = get_kl(model_new)
+            if surr_loss >= 0 and kl_div <= self.param.DELTA:
+                params_curr = params_new
+                break
+        return params_curr
+    
 
-        return params_new
+    def seed(self, seed):
+        self.param.SEED = seed
+        torch.manual_seed(self.param.SEED)
+        numpy.random.seed(self.param.SEED)
+        self.rng = random.Random(self.param.SEED)
+
+
+    def reset(self):
+        self.__init__(self.env)

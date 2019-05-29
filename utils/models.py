@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal, Categorical, kl_divergence
+from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from copy import deepcopy
 
 __all__ = ['Value', 'Policy']
@@ -84,16 +85,22 @@ class Policy(nn.Module):
         return dist
 
     def get_grads(self, loss):
-        grads = torch.autograd.grad(loss, self.parameters(), allow_unused=True)
-        # TODO: Missmatch of dim to parameters
-        grads = [torch.Tensor([0]) if grad is None else grad for grad in grads]
-        grads_flat = torch.cat([grad.view(-1) for grad in grads]).detach() 
-        return grads_flat
+        with torch.no_grad():
+            grads = torch.autograd.grad(loss, self.parameters())
+        return parameters_to_vector(grads)
     
     def get_params(self):
-        params = self.state_dict().values()
-        params = torch.cat([param.view(-1) for param in params])
-        return params
+        return parameters_to_vector(self.parameters())
+    
+    def set_params(self, flat_params):
+        vector_to_parameters(flat_params, self.parameters())
+        # prev_ind = 0
+        # for param in self.parameters():
+        #     flat_size = param.nelement()
+        #     param.data.copy_(
+        #         flat_params[prev_ind:prev_ind + flat_size].view(param.size()))
+        #     prev_ind += flat_size
+        
 
 
 class Value(nn.Module):
