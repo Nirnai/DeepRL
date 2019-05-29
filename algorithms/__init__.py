@@ -6,4 +6,5 @@ from .ddpg import *
 from .pg import *
 from .ppo import *
 from .trpo import *
+from .sac import *
 

@@ -1,0 +1,15 @@
+{
+    "ACTIVATION" : "ReLU",
+    "ARCHITECTURE" : [
+        4,
+        64,
+        64,
+        2
+    ],
+    "LEARNING_RATE": 1e-3,
+    "SEED" : null,
+    "MEMORY_SIZE": 1e6,
+    "BATCH_SIZE": 128,
+    "GAMMA" : 0.99,
+    "TAU": 0.995
+}
