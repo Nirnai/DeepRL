@@ -5,8 +5,6 @@ from torch.distributions import Normal, Categorical, kl_divergence
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from copy import deepcopy
 
-__all__ = ['Value', 'Policy']
-
 def init_policy_weights(m):
     if isinstance(m, nn.Linear):
         m.weight.data.mul_(0.1)
