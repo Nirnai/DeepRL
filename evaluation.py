@@ -133,7 +133,6 @@ class Evaluation():
             seeds.append(rng.randint(0,100))
             env.seed(seeds[i])
             alg.seed(seeds[i])
-            # episode = 0
             
 
             state = env.reset()

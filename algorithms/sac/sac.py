@@ -62,10 +62,12 @@ class SAC(RLAlgorithm):
 
             # Resample from policy and bound output
             policy = self.actor(state_batch)
-            actions = torch.tanh(policy.rsample())
-            log_probs = (policy.log_prob(actions).squeeze() - torch.log(1-torch.tanh(policy.mean).pow(2)).squeeze())
-            Q1 = self.qcritic1(state_batch, actions.detach()).squeeze()
-            Q2 = self.qcritic2(state_batch, actions.detach()).squeeze()
+            action = policy.rsample()
+            log_probs = (policy.log_prob(action) - torch.log1p(-torch.tanh(action).pow(2) + 1e-6)).squeeze()
+            actions_bounded = torch.tanh(action)
+
+            Q1 = self.qcritic1(state_batch, actions_bounded.detach()).squeeze()
+            Q2 = self.qcritic2(state_batch, actions_bounded.detach()).squeeze()
             
             V_target = torch.min(Q1, Q2) - self.param.ALPHA * log_probs.detach()
             Q_target = reward_batch + self.param.GAMMA * mask_batch * self.vcritic_target(next_state_batch).squeeze()
@@ -81,20 +83,9 @@ class SAC(RLAlgorithm):
             Q_loss.backward()
             self.qritics_optim.step()
 
-            policy_loss = (self.qcritic1(state_batch, actions).squeeze() - self.param.ALPHA * log_probs).mean()
+            policy_loss = (self.param.ALPHA * log_probs - self.qcritic1(state_batch, actions_bounded).squeeze()).mean()
             self.actor_optim.zero_grad()
             policy_loss.backward()
             self.actor_optim.step()
 
             soft_target_update(self.vcritic, self.vcritic_target, self.param.TAU)
-
-
-    def seed(self, seed):
-        self.param.SEED = seed
-        torch.manual_seed(self.param.SEED)
-        numpy.random.seed(self.param.SEED)
-        self.rng = random.Random(self.param.SEED)
-
-
-    def reset(self):
-        self.__init__(self.env)

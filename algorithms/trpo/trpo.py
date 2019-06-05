@@ -146,14 +146,3 @@ class TRPO(RLAlgorithm):
                 params_curr = params_new
                 break
         return params_curr
-    
-
-    def seed(self, seed):
-        self.param.SEED = seed
-        torch.manual_seed(self.param.SEED)
-        numpy.random.seed(self.param.SEED)
-        self.rng = random.Random(self.param.SEED)
-
-
-    def reset(self):
-        self.__init__(self.env)

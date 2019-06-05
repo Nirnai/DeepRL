@@ -25,9 +25,6 @@ class PPO(RLAlgorithm):
         architecture = self.param.ARCHITECTURE
         activation = self.param.ACTIVATION
 
-        if self.param.SEED != None:
-            self.seed(self.param.SEED)
-
         self.actor = Policy(architecture, activation, action_space=self.action_space)
         self.actor_optim = optim.Adam(self.actor.parameters(), lr=self.param.LEARNING_RATE)
         self.critic = Value(architecture, activation)
@@ -101,13 +98,3 @@ class PPO(RLAlgorithm):
             delta = rewards[t] + self.param.GAMMA * values[t+1] * mask[t] - values[t]
             advantages[t] = delta + self.param.GAMMA * self.param.LAMBDA * mask[t] * advantages[t+1]
         return torch.stack(advantages[:-1])
-
-
-    def seed(self, seed):
-        self.param.SEED = seed
-        torch.manual_seed(self.param.SEED)
-        numpy.random.seed(self.param.SEED)
-        self.rng = random.Random(self.param.SEED)
-
-    def reset(self):
-        self.__init__(self.env)
