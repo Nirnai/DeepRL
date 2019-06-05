@@ -1,5 +1,6 @@
 import os
 import inspect
+import random
 import numpy
 import torch
 import torch.optim as optim
@@ -35,11 +36,12 @@ class SAC(RLAlgorithm):
 
     
     def act(self, state, exploit=False):
-        policy = self.actor(torch.from_numpy(state).float())
-        if exploit:
-            action = policy.mean.detach()
-        else:
-            action = policy.sample()
+        with torch.no_grad():
+            policy = self.actor(torch.from_numpy(state).float())
+            if exploit:
+                action = torch.tanh(policy.mean.detach())
+            else:
+                action = torch.tanh(policy.sample())    
         next_state, reward, done, _ = self.env.step(action.numpy()) 
         self.replay_buffer.push(state, action, reward, next_state, done)
         self.steps += 1
@@ -58,13 +60,20 @@ class SAC(RLAlgorithm):
             reward_batch = torch.Tensor(transitions.reward)
             mask_batch = torch.Tensor(transitions.mask)
 
-            Q_target = reward_batch + self.param.GAMMA * mask_batch * self.vcritic_target(next_state_batch).squeeze()
+            # Resample from policy and bound output
             policy = self.actor(state_batch)
-            actions = policy.rsample()
-            entropy = 0.2 * policy.log_prob(actions).squeeze()
+            actions = torch.tanh(policy.rsample())
+            log_probs = (policy.log_prob(actions).squeeze() - torch.log(1-torch.tanh(policy.mean).pow(2)).squeeze())
             Q1 = self.qcritic1(state_batch, actions.detach()).squeeze()
             Q2 = self.qcritic2(state_batch, actions.detach()).squeeze()
-            V_target = torch.min(Q1, Q2) - entropy.detach()
+            
+            V_target = torch.min(Q1, Q2) - self.param.ALPHA * log_probs.detach()
+            Q_target = reward_batch + self.param.GAMMA * mask_batch * self.vcritic_target(next_state_batch).squeeze()
+
+            V_loss = (self.vcritic(state_batch).squeeze() - V_target).pow(2).mean()
+            self.vcritic_optim.zero_grad()
+            V_loss.backward()
+            self.vcritic_optim.step()
 
             Q_loss = (self.qcritic1(state_batch, action_batch.unsqueeze(1)).squeeze() - Q_target).pow(2).mean() + \
                     (self.qcritic2(state_batch, action_batch.unsqueeze(1)).squeeze() - Q_target).pow(2).mean()
@@ -72,12 +81,7 @@ class SAC(RLAlgorithm):
             Q_loss.backward()
             self.qritics_optim.step()
 
-            V_loss = (self.vcritic(state_batch).squeeze() - V_target).pow(2).mean()
-            self.vcritic_optim.zero_grad()
-            V_loss.backward()
-            self.vcritic_optim.step()
-
-            policy_loss = (entropy - self.qcritic1(state_batch, actions).squeeze()).mean()
+            policy_loss = (self.qcritic1(state_batch, actions).squeeze() - self.param.ALPHA * log_probs).mean()
             self.actor_optim.zero_grad()
             policy_loss.backward()
             self.actor_optim.step()
@@ -85,9 +89,12 @@ class SAC(RLAlgorithm):
             soft_target_update(self.vcritic, self.vcritic_target, self.param.TAU)
 
 
-
     def seed(self, seed):
-        pass
+        self.param.SEED = seed
+        torch.manual_seed(self.param.SEED)
+        numpy.random.seed(self.param.SEED)
+        self.rng = random.Random(self.param.SEED)
+
 
     def reset(self):
-        pass
+        self.__init__(self.env)

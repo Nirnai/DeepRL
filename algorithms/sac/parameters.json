@@ -11,5 +11,6 @@
     "MEMORY_SIZE": 1e6,
     "BATCH_SIZE": 128,
     "GAMMA" : 0.99,
-    "TAU": 0.995
+    "TAU": 0.995, 
+    "ALPHA": 0.2
 }

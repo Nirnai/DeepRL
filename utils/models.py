@@ -92,7 +92,39 @@ class Policy(nn.Module):
     
     def set_params(self, flat_params):
         vector_to_parameters(flat_params, self.parameters())
-        
+    
+# class SoftPolicy(nn.Module):
+#     def __init__(self, architecture, activation, action_min, action_max, action_space='continuous'):
+#         super(SoftPolicy, self).__init__()
+#         self.num_inputs = architecture[0]
+#         self.num_outputs = architecture[-1]
+#         self.action_space = action_space
+#         self.action_min = action_min
+#         self.action_max = action_max
+
+#         activation = getattr(nn.modules.activation, activation)()
+#         layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
+#         affine_layers = nn.Sequential(*layers)
+#         affine_layers.apply(init_hidden_weights)
+
+#         if self.action_space is 'discrete':
+#             raise NotImplementedError
+#         elif self.action_space is 'continuous':
+#             action_params = linear_layer(architecture[-2], 2*self.num_outputs)
+#             action_params.apply(init_policy_weights)
+#             policy_layers = nn.Sequential(affine_layers, action_params)
+#         self.policy = unwrap_layers(policy_layers)
+    
+#     def forward(self, state):
+#         if self.action_space is 'discrete':
+#             raise NotImplementedError
+#         if self.action_space is 'continuous':
+#             mean, std = self.policy(state).chunk(2)
+#             std = torch.clamp(std, min=self.action_min, max=self.action_max)
+#             dist = Normal(mean, std)
+            
+
+#         return dist
 
 
 class Value(nn.Module):
