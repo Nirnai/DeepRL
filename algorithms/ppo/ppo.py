@@ -12,9 +12,9 @@ from copy import deepcopy
 from utils.models import Policy, Value
 from utils.memory import RolloutBuffer
 from utils.env import getEnvInfo
-from algorithms import RLAlgorithm, HyperParameter
+from algorithms import BaseRL, HyperParameter
 
-class PPO(RLAlgorithm):
+class PPO(BaseRL):
     def __init__(self, env):
         super(PPO, self).__init__(env)
         self.name = "PPO"

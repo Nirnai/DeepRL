@@ -64,29 +64,44 @@ class Policy(nn.Module):
         if self.action_space is 'discrete':
             policy_output = softmax_layer(architecture[-2], self.num_outputs)
             policy_output.apply(init_policy_weights)
-            policy_layers = nn.Sequential(layers, policy_output)
+            policy_layers = nn.Sequential(affine_layers, policy_output)
         elif self.action_space is 'continuous':
             action_mean = linear_layer(architecture[-2], self.num_outputs)
             action_mean.apply(init_policy_weights)
             policy_layers = nn.Sequential(affine_layers, action_mean)
-        self.policy = unwrap_layers(policy_layers)
+        self._policy = unwrap_layers(policy_layers)
         self.action_log_std = nn.Parameter(torch.zeros(self.num_outputs))
     
-    def forward(self, state):
-        if self.action_space is 'discrete':
-            probs = self.policy(state)
-            dist = Categorical(probs)
-        if self.action_space is 'continuous':
-            mean = self.policy(state)
-            std = torch.exp(self.action_log_std.expand_as(mean))
-            dist = Normal(mean, std)
-        return dist
+    def forward(self, state, exploit=False):
+        policy = self.policy(state)
+        if exploit:
+            if hasattr(policy, 'probs'):
+                return torch.argmax(policy.probs)
+            else:
+                return policy.mean
+        else:
+            return policy.sample()
 
-    def get_grads(self, loss):
+    def policy(self, state):
+        if self.action_space is 'discrete':
+            probs = self._policy(state)
+            policy = Categorical(probs)
+        if self.action_space is 'continuous':
+            mean = self._policy(state)
+            std = torch.exp(self.action_log_std.expand_as(mean))
+            policy = Normal(mean, std)
+        return policy
+
+    def log_probs(self, states, actions):
+        policy = self.policy(states)
+        return policy.log_prob(actions)
+
+    def grad(self, loss):
         with torch.no_grad():
             grads = torch.autograd.grad(loss, self.parameters())
         return parameters_to_vector(grads)
     
+    # Make properties
     def get_params(self):
         return parameters_to_vector(self.parameters())
     

@@ -1,14 +1,11 @@
 {
     "ACTIVATION": "ReLU",
     "GAMMA": 0.99,
-    "LEARNING_RATE": 0.001,
-    "NETWORK_ARCHITECTURE": [
+    "LEARNING_RATE": 1e-3,
+    "ARCHITECTURE": [
         4,
-        128,
-        200,
-        128,
+        512,
         2
-    ],
-    "SEED": null,
-    "EXPLORATION_NOISE" : 0.20
+    ], 
+    "BATCH_SIZE" : 1500
 }

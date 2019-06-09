@@ -12,13 +12,13 @@ import torch.nn.functional as F
 from copy import deepcopy
 from torch.distributions.kl import kl_divergence
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
-from algorithms import RLAlgorithm, HyperParameter
+from algorithms import BaseRL, HyperParameter
 from utils.models import Policy, Value
 from utils.memory import RolloutBuffer
 from utils.env import getEnvInfo
 
 
-class TRPO(RLAlgorithm):
+class TRPO(BaseRL):
     def __init__(self, env):
         super(TRPO, self).__init__(env)
         self.name = "TRPO"

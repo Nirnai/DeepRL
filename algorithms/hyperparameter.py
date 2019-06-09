@@ -4,7 +4,7 @@ import yaml
 class HyperParameter:
     def __init__(self, path=None):
         # # Network Architecture for Neural Network (e.g. [4,128,2]) 
-        self.ARCHITECTURE = []
+        # self.ARCHITECTURE = []
 
         # Activations Function
         # Possible activations in Pytorch:
@@ -12,7 +12,7 @@ class HyperParameter:
         # 'LogSigmoid', 'LogSoftmax', 'PReLU', 'RReLU', 'ReLU', 'ReLU6', 'SELU', 
         # 'Sigmoid', 'Softmax', 'Softmax2d', 'Softmin', 'Softplus', 'Softshrink', 
         # 'Softsign', 'Tanh', 'Tanhshrink', 'Threshold'
-        self.ACTIVATION = None
+        # self.ACTIVATION = None
 
         # # Loss Function
         # # Possible Loss functions in Pytorch

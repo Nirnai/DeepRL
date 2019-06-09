@@ -5,12 +5,12 @@ import numpy
 import torch
 import torch.optim as optim
 from copy import deepcopy
-from algorithms import RLAlgorithm, HyperParameter
+from algorithms import BaseRL, HyperParameter
 from utils.models import Policy, Value, QValue
 from utils.helper import soft_target_update
 from utils.memory import ReplayBuffer
 
-class SAC(RLAlgorithm):
+class SAC(BaseRL):
     def __init__(self, env):
         super(SAC,self).__init__(env)
         self.name = "SAC"

@@ -1,3 +1,3 @@
-from .pg import *
+from .vpg import *
 
-__all__ = ['PG']
+__all__ = ['VPG']

@@ -53,11 +53,7 @@ class Evaluation():
 
         for reward, done in zip(reward, done): 
             if done:
-                # Compute new average reward
-                # if len(self.episode_rewards) > self.avaraging_window:
                 self.average_rewards = np.append(self.average_rewards, np.mean(self.episode_rewards[-self.avaraging_window:]))
-                # else:
-                    # self.average_rewards = np.append(self.average_rewards, np.mean(self.episode_rewards))
                 self.episode_rewards.append(0.0)
                 # Check for Termination
                 if self.episodes > 0:
