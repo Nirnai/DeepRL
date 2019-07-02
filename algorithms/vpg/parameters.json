@@ -4,8 +4,8 @@
     "LEARNING_RATE": 1e-3,
     "ARCHITECTURE": [
         4,
-        512,
+        64,
         2
     ], 
-    "BATCH_SIZE" : 1500
+    "BATCH_SIZE" : 100
 }

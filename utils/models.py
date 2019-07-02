@@ -5,15 +5,20 @@ from torch.distributions import Normal, Categorical, kl_divergence
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from copy import deepcopy
 
-def init_policy_weights(m):
-    if isinstance(m, nn.Linear):
-        m.weight.data.mul_(0.1)
-        # nn.init.normal_(m.weight, mean=0.001, std=0.01)
-        nn.init.zeros_(m.bias)
-
-def init_hidden_weights(m):
+def xavier_init(m):
     if isinstance(m, nn.Linear):
         nn.init.xavier_uniform_(m.weight)
+        nn.init.zeros_(m.bias)
+
+def kaiming_init(m):
+    if isinstance(m, nn.Linear):
+        nn.init.kaiming_uniform_(m.weight, nonlinearity='relu')
+        nn.init.zeros_(m.bias)
+
+def init_policy_weights(m):
+    if isinstance(m, nn.Linear):
+        # m.weight.data.mul_(0.1)
+        nn.init.normal_(m.weight, mean=0, std=0.1)
         nn.init.zeros_(m.bias)
 
 def init_output_weights(m):
@@ -59,7 +64,7 @@ class Policy(nn.Module):
         activation = getattr(nn.modules.activation, activation)()
         layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
         affine_layers = nn.Sequential(*layers)
-        affine_layers.apply(init_hidden_weights)
+        affine_layers.apply(xavier_init)
 
         if self.action_space is 'discrete':
             policy_output = softmax_layer(architecture[-2], self.num_outputs)
@@ -69,18 +74,21 @@ class Policy(nn.Module):
             action_mean = linear_layer(architecture[-2], self.num_outputs)
             action_mean.apply(init_policy_weights)
             policy_layers = nn.Sequential(affine_layers, action_mean)
+            self.action_log_std = nn.Parameter(torch.zeros(self.num_outputs))
         self._policy = unwrap_layers(policy_layers)
-        self.action_log_std = nn.Parameter(torch.zeros(self.num_outputs))
+        # self._policy.apply(kaiming_init)
+        
     
     def forward(self, state, exploit=False):
-        policy = self.policy(state)
-        if exploit:
-            if hasattr(policy, 'probs'):
-                return torch.argmax(policy.probs)
+        with torch.no_grad():
+            policy = self.policy(state)
+            if exploit:
+                if hasattr(policy, 'probs'):
+                    return torch.argmax(policy.probs)
+                else:
+                    return policy.mean
             else:
-                return policy.mean
-        else:
-            return policy.sample()
+                return policy.sample()
 
     def policy(self, state):
         if self.action_space is 'discrete':
@@ -94,7 +102,11 @@ class Policy(nn.Module):
 
     def log_probs(self, states, actions):
         policy = self.policy(states)
-        return policy.log_prob(actions)
+        return policy.log_prob(actions).squeeze()
+    
+    def entropy(self, states):
+        policy = self.policy(states)
+        return policy.entropy()
 
     def grad(self, loss):
         with torch.no_grad():
@@ -151,12 +163,12 @@ class Value(nn.Module):
         activation = getattr(nn.modules.activation, activation)()
         layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
         affine_layers = nn.Sequential(*layers)
-        affine_layers.apply(init_hidden_weights)
+        affine_layers.apply(xavier_init)
 
         output_layer = linear_layer(architecture[-2], 1)
-        output_layer.apply(init_policy_weights)
-        
+        output_layer.apply(init_output_weights)
         self.value = unwrap_layers(nn.Sequential(affine_layers, output_layer))
+        # self.value.apply(xavier_init)
 
     def forward(self, state):
         return self.value(state)
@@ -173,7 +185,7 @@ class QValue(nn.Module):
         activation = getattr(nn.modules.activation, activation)()
         layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(arch_mod[:-1], arch_mod[1:-1])]
         affine_layers = nn.Sequential(*layers)
-        affine_layers.apply(init_hidden_weights)
+        affine_layers.apply(xavier_init)
 
         output_layer = linear_layer(architecture[-2], 1)
         output_layer.apply(init_policy_weights)

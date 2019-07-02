@@ -1,129 +1,54 @@
-import random 
-import numpy 
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.distributions as dist
-from algorithms.utils import ActorCritic
-from algorithms.utils import getEnvInfo
-from collections import namedtuple
+from algorithms import onPolicy, ActorCritic, HyperParameter
 
-Transition = namedtuple('Transition', ('log_probs', 'entropy', 'rewards', 'values', 'next_values', 'mask'))
-
-
-class A2C():
-    def __init__(self, env, param):
+class A2C(ActorCritic):
+    def __init__(self, env):
+        super().__init__(env)   
         self.name = "A2C"
-        self.env = env
-        self.param = param
-        self.rng = random.Random()
 
-        self.state_dim, self.action_dim, self.action_space = getEnvInfo(env)
-        self.param.ACTOR_ARCHITECTURE[0] = self.state_dim
-        self.param.ACTOR_ARCHITECTURE[-1] = self.action_dim
-
-        if self.param.SEED != None:
-            self.seed(self.param.SEED)
-
-        self.model = ActorCritic(self.param.ACTOR_ARCHITECTURE, self.param.ACTIVATION, action_space=self.action_space)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.param.LEARNING_RATE)
-
-        self.rollout = []
-        # self.rollouts = []
-
-        self.steps = 0
-        self.done = False
-    
-    def act(self, state):
-        ''' '''
-        policy, value = self.model(torch.from_numpy(state).float())
-        action = policy.sample() 
-        next_state, reward, done, _ = self.env.step(action.numpy()) 
-
-        with torch.no_grad():
-            _, next_value = self.model(torch.from_numpy(next_state).float())
-
-        self.rollout.append(Transition(policy.log_prob(action), 
-                                       policy.entropy(),
-                                       reward, 
-                                       value, 
-                                       next_value,
-                                       (1-done)))
-        self.steps += 1
-        self.done = done  
-        self.next_state = torch.from_numpy(next_state).float()       
-
-        return next_state, reward, done
-
-
+    @onPolicy
     def learn(self):
-        if self.steps % self.param.STEPS == 0:
-        # if self.done:
-            rollout = Transition(*zip(*self.rollout))
-            rewards = torch.Tensor(rollout.rewards)
-            values = torch.stack(rollout.values).squeeze()
-            next_values = torch.stack(rollout.next_values).squeeze()
-            log_probs = torch.stack(rollout.log_probs)
-            entropy = torch.stack(rollout.entropy).sum()
-            mask = torch.Tensor(rollout.mask)
+        rollouts = self.onPolicyData
+        # Generalized Advantage Estimation
+        advantages = self.returns(rollouts) - self.values(rollouts)
+        # Critic Step
+        critic_loss = advantages.pow(2).mean()
+        self.optimize_critic(critic_loss)
+        # Actor Step
+        actor_loss = self.pg_objective(rollouts, advantages)
+        self.optimize_actor(actor_loss)
 
 
-            # advantages = self.bootstrapped_advantage_estimation(rewards, values, next_values, mask)
-            # Monte Carlo Advantages
-            advantages = self.monte_carlo_advantage_estimation(rewards, values, mask)
-            # General Advantages
-            # advantages = self.generaized_advantage_estimation(rewards, values, mask)
+    ################################################################
+    ########################## Utilities ###########################
+    ################################################################
 
-            critic_loss = advantages.pow(2).mean()
-            actor_loss = (- log_probs * advantages.detach()).sum()
+    def pg_objective(self, rollouts, advantages):
+        entropy = self.actor.policy(rollouts.state).entropy().squeeze()
+        log_probs = self.actor.log_probs(rollouts.state, rollouts.action)
+        loss = (- log_probs * advantages.detach() - 0.001 * entropy).sum()
+        return loss
 
-            loss =  actor_loss + 0.5 * critic_loss  - 0.001 * entropy
+    def returns(self, rollouts):
+        ''' Computes Monte Carlo Returns '''
+        returns = [0] * len(rollouts.reward)
+        for t in reversed(range(len(rollouts.reward[:-1]))):
+            returns[t] = rollouts.reward[t] + self.param.GAMMA * rollouts.mask[t] * returns[t+1]
+        returns = torch.Tensor(returns)
+        return returns
 
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-
-            del self.rollout[:]
-
-
-    def bootstrapped_advantage_estimation(self, rewards, values, next_values, mask):
-        advantages = rewards + self.param.GAMMA * next_values * mask - values
-        return advantages
-    
-    def generaized_advantage_estimation(self, rewards, values, mask):
-        '''  Generaized Advantage Estimation '''
+    def gae(self, rollouts):
+        '''  Generalized Advantage Estimation '''
+        values = self.critic(rollouts.state).squeeze()
         with torch.no_grad():
-                _, next_value = self.model(self.next_state)
-
+            next_value = self.critic(rollouts.next_state[-1])
         values = torch.cat((values, next_value))
-        advantages = []
-        a_gae = 0
-        
-        for t in reversed(range(len(rewards))):
-            delta = rewards[t] + self.param.GAMMA * values[t+1] * mask[t] - values[t]
-            a_gae = (self.param.GAMMA * self.param.LAMBDA * mask[t]) * a_gae + delta
-            advantages.insert(0, a_gae)
-        return torch.Tensor(advantages)
-
-
-    def monte_carlo_advantage_estimation(self, rewards, values, mask):
-        with torch.no_grad():
-                _, next_value = self.model(self.next_state)
-        Q = next_value
-        returns = []
-        for t in reversed(range(len(rewards))):
-            Q = rewards[t] + self.param.GAMMA * Q * mask[t]
-            returns.insert(0, Q)   
-        advantages = torch.Tensor(returns) - values
-        
-        return advantages
-
-
-    def seed(self, seed):
-        self.param.SEED = seed
-        torch.manual_seed(self.param.SEED)
-        numpy.random.seed(self.param.SEED)
-        self.rng = random.Random(self.param.SEED)
-
-    def reset(self):
-        self.__init__(self.env, self.param)
+        advantages = [0] * (len(rollouts.reward)+1)
+        for t in reversed(range(len(rollouts.reward))):
+            delta = rollouts.reward[t] + self.param.GAMMA * values[t+1] * rollouts.mask[t] - values[t]
+            advantages[t] = delta + self.param.GAMMA * self.param.LAMBDA * rollouts.mask[t] * advantages[t+1]
+        advantages = torch.stack(advantages[:-1])
+        return advantages 
+            
+    def values(self, rollouts):
+        return self.critic(rollouts.state).squeeze()

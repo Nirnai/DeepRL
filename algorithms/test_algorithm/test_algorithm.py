@@ -8,6 +8,13 @@ class Test(BaseRL):
     def __init__(self, env):    
         super().__init__(env)    
         self.name = "Test"
+        path1 = "algorithms/test_algorithm/parameters.yaml"
+        path2 = "algorithms/test_algorithm/parameters2.yaml"
+        self.param_yaml = HyperParameter()
+        self.param_yaml.load_yaml(path1)
+        print(self.param_yaml)
+        self.param_yaml.save_yaml(path2)
+
     
     def act(self, state):
         action = self.env.action_space.sample()
