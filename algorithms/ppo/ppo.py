@@ -22,6 +22,11 @@ class PPO(ActorCritic):
             actor_loss = self.clipped_objective(rollouts, advantages)
             self.optimize_actor(actor_loss)
 
+        metrics = dict()
+        metrics['value loss'] = critic_loss.item()
+        metrics['policy entropy'] = self.actor.entropy(rollouts.state).sum().item()
+        return metrics
+
 
     ################################################################
     ########################## Utilities ###########################
@@ -51,4 +56,4 @@ class PPO(ActorCritic):
             delta = rollouts.reward[t] + self.param.GAMMA * values[t+1] * rollouts.mask[t] - values[t]
             advantages[t] = delta + self.param.GAMMA * self.param.LAMBDA * rollouts.mask[t] * advantages[t+1]
         advantages = torch.stack(advantages[:-1])
-        return (advantages - advantages.mean()) / advantages.std() 
+        return advantages #(advantages - advantages.mean()) / advantages.std() 

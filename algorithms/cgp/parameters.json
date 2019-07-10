@@ -1,0 +1,17 @@
+{
+    "MEMORY_SIZE": 1e6,
+    "BATCH_SIZE": 128,
+    "GAMMA": 0.99,
+    "TAU": 0.005,
+    "LEARNING_RATE": 1e-3,
+    "ACTIVATION" : "ReLU",
+    "ARCHITECTURE" : [
+        3,
+        128,
+        128,
+        1
+    ],
+    "CEM_ITERATIONS": 2,
+    "CEM_BATCH": 64,
+    "CEM_TOPK": 6
+}

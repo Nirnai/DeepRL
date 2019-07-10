@@ -11,19 +11,19 @@ def load_dataset(path):
     else:
         raise FileNotFoundError
 
-def plot_dataset(path, step=5000, goal=0 ,statistic=None, show=True):
+def plot_dataset(path, total_steps=1e6, goal=0 ,statistic=None, show=True):
     data = load_dataset(path)
-    steps = len(data[0]) * step
+    steps = np.linspace(0,total_steps, len(data[0]))
     fig = plt.figure()
     if statistic is None:
         for sample in data:
-            plt.plot(sample)
-        plt.plot([goal] * steps, 'k--', label = 'goal reward')
+            plt.plot(steps, sample)
+        plt.plot(steps, [goal] * len(steps), 'k--', label = 'goal reward')
     elif statistic is 'normal':
         mean, low, high = mean_confidance(data)
-        plt.plot(mean, label = 'mean')
-        plt.fill_between(range(steps), low, high, facecolor='lightblue', label='std-error')
-        plt.plot([goal] * steps, 'k--', label = 'goal reward')
+        plt.plot(steps, mean, label = 'mean')
+        plt.fill_between(steps, low, high, facecolor='lightblue', label='std-error')
+        plt.plot(steps, [goal] * len(steps), 'k--', label = 'goal reward')
         plt.legend()
     else:
         NotImplementedError

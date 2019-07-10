@@ -24,7 +24,10 @@ class TRPO(ActorCritic):
         parameters = self.linesearch(npg, pg, rollouts)
         self.optimize_actor(parameters)
 
-        return critic_loss.item(), self.actor.entropy(rollouts.state).sum().item()
+        metrics = dict()
+        metrics['value loss'] = critic_loss.item()
+        metrics['policy entropy'] = self.actor.entropy(rollouts.state).sum().item()
+        return metrics
         
 
     ################################################################
@@ -47,7 +50,7 @@ class TRPO(ActorCritic):
             Jx = torch.sum(grads * x)
             Hx = torch.autograd.grad(Jx, self.actor.parameters())
             Hx = parameters_to_vector(Hx)
-            return Hx + 0.1 * x
+            return Hx + self.param.CG_DAMPING * x
 
         stepdir = self.conjugate_gradient(Hx, pg, self.param.NUM_CG_ITER)  
         stepsize = (2 * self.param.DELTA) / torch.dot(stepdir,Hx(stepdir))
@@ -71,7 +74,7 @@ class TRPO(ActorCritic):
         with torch.no_grad():
             p_old = self.actor.policy(rollouts.state)
         p_new = model.policy(rollouts.state)
-        d_kl = kl_divergence(p_old, p_new).mean()
+        d_kl = kl_divergence(p_old, p_new).sum(dim=-1, keepdim=True).mean()
         return d_kl
 
     def conjugate_gradient(self, A, b, n):

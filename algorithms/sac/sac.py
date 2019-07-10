@@ -8,7 +8,7 @@ from copy import deepcopy
 from algorithms import BaseRL, HyperParameter
 from utils.models import Policy, Value, QValue
 from utils.helper import soft_target_update
-from utils.memory import ReplayBuffer
+from utils.memory import Memory
 
 class SAC(BaseRL):
     def __init__(self, env):
@@ -31,7 +31,7 @@ class SAC(BaseRL):
         self.qcritic2 = QValue(architecture, activation) 
         self.qritics_optim = optim.Adam(list(self.qcritic1.parameters()) + list(self.qcritic2.parameters()), lr=self.param.LEARNING_RATE)
         
-        self.replay_buffer = ReplayBuffer(int(self.param.MEMORY_SIZE), self.rng)
+        self.replay_buffer = Memory(int(self.param.MEMORY_SIZE), self.rng)
         self.steps = 0
 
     

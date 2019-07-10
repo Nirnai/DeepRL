@@ -1,7 +1,7 @@
 import torch
-from algorithms import onPolicy, ActorOnly
+from algorithms import onPolicy, PolicyGradient
 
-class VPG(ActorOnly):
+class VPG(PolicyGradient):
     def __init__(self, env):    
         super().__init__(env)    
         self.name = "VPG"

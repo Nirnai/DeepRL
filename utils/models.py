@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions import Normal, Categorical, kl_divergence
+from torch.distributions import Normal, MultivariateNormal, Categorical, kl_divergence
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from copy import deepcopy
 
@@ -74,7 +74,7 @@ class Policy(nn.Module):
             action_mean = linear_layer(architecture[-2], self.num_outputs)
             action_mean.apply(init_policy_weights)
             policy_layers = nn.Sequential(affine_layers, action_mean)
-            self.action_log_std = nn.Parameter(torch.zeros(self.num_outputs))
+            self.action_log_std = nn.Parameter(torch.ones(self.num_outputs))
         self._policy = unwrap_layers(policy_layers)
         # self._policy.apply(kaiming_init)
         
@@ -102,7 +102,7 @@ class Policy(nn.Module):
 
     def log_probs(self, states, actions):
         policy = self.policy(states)
-        return policy.log_prob(actions).squeeze()
+        return policy.log_prob(actions).sum(dim=-1)
     
     def entropy(self, states):
         policy = self.policy(states)
@@ -119,39 +119,6 @@ class Policy(nn.Module):
     
     def set_params(self, flat_params):
         vector_to_parameters(flat_params, self.parameters())
-    
-# class SoftPolicy(nn.Module):
-#     def __init__(self, architecture, activation, action_min, action_max, action_space='continuous'):
-#         super(SoftPolicy, self).__init__()
-#         self.num_inputs = architecture[0]
-#         self.num_outputs = architecture[-1]
-#         self.action_space = action_space
-#         self.action_min = action_min
-#         self.action_max = action_max
-
-#         activation = getattr(nn.modules.activation, activation)()
-#         layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
-#         affine_layers = nn.Sequential(*layers)
-#         affine_layers.apply(init_hidden_weights)
-
-#         if self.action_space is 'discrete':
-#             raise NotImplementedError
-#         elif self.action_space is 'continuous':
-#             action_params = linear_layer(architecture[-2], 2*self.num_outputs)
-#             action_params.apply(init_policy_weights)
-#             policy_layers = nn.Sequential(affine_layers, action_params)
-#         self.policy = unwrap_layers(policy_layers)
-    
-#     def forward(self, state):
-#         if self.action_space is 'discrete':
-#             raise NotImplementedError
-#         if self.action_space is 'continuous':
-#             mean, std = self.policy(state).chunk(2)
-#             std = torch.clamp(std, min=self.action_min, max=self.action_max)
-#             dist = Normal(mean, std)
-            
-
-#         return dist
 
 
 class Value(nn.Module):
@@ -185,13 +152,12 @@ class QValue(nn.Module):
         activation = getattr(nn.modules.activation, activation)()
         layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(arch_mod[:-1], arch_mod[1:-1])]
         affine_layers = nn.Sequential(*layers)
-        affine_layers.apply(xavier_init)
+        # affine_layers.apply(xavier_init)
 
         output_layer = linear_layer(architecture[-2], 1)
-        output_layer.apply(init_policy_weights)
-        
+        # output_layer.apply(init_output_weights)
         self.qvalue = unwrap_layers(nn.Sequential(affine_layers, output_layer))
 
     def forward(self, state, action):
-        in_ = torch.cat((state,action), dim=1)
-        return self.qvalue(in_)
+        xu = torch.cat([state, action], dim=-1)
+        return self.qvalue(xu)

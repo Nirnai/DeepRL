@@ -1,5 +1,5 @@
 import json
-import ruamel.yaml as ryaml
+# import ruamel.yaml as ryaml
 
 class HyperParameter:
     def __init__(self, path=None):
@@ -40,17 +40,17 @@ class HyperParameter:
             for key in parameters:
                 self.__setattr__(key, parameters[key])
             
-    def load_yaml(self, path):
-        with open(path, 'r') as infile:
-            parameters = ryaml.load(infile)
-            for key in parameters.keys():
-                self.__setattr__(key, parameters[key])
+    # def load_yaml(self, path):
+    #     with open(path, 'r') as infile:
+    #         parameters = ryaml.load(infile)
+    #         for key in parameters.keys():
+    #             self.__setattr__(key, parameters[key])
     
-    def save_yaml(self, path):
-        yaml = ryaml.YAML()
-        yaml.register_class(HyperParameter)
-        with open(path, 'w') as outfile:
-            yaml.dump(self)
+    # def save_yaml(self, path):
+    #     yaml = ryaml.YAML()
+    #     yaml.register_class(HyperParameter)
+    #     with open(path, 'w') as outfile:
+    #         yaml.dump(self)
     # TODO: Epsilon Decay should be part of evaluation
 
 

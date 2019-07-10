@@ -18,6 +18,8 @@ class A2C(ActorCritic):
         actor_loss = self.pg_objective(rollouts, advantages)
         self.optimize_actor(actor_loss)
 
+        return critic_loss, self.actor.entropy(rollouts.state).sum().item()
+
 
     ################################################################
     ########################## Utilities ###########################
@@ -26,7 +28,7 @@ class A2C(ActorCritic):
     def pg_objective(self, rollouts, advantages):
         entropy = self.actor.policy(rollouts.state).entropy().squeeze()
         log_probs = self.actor.log_probs(rollouts.state, rollouts.action)
-        loss = (- log_probs * advantages.detach() - 0.001 * entropy).sum()
+        loss = (- log_probs * advantages.detach()).sum()
         return loss
 
     def returns(self, rollouts):

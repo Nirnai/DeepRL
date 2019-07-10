@@ -1,19 +1,46 @@
-import gym
-from gym import wrappers
+# import os
+# import mujoco_py
 
-env = gym.make("Pendulum-v0")
-# env = wrappers.Monitor(env, directory="video", force=True)
-observation = env.reset()
-# i = 0
-# for _ in range(100):
-env.render()
-#     action = env.action_space.sample()  # your agent here (this takes random actions)
-#     observation, reward, done, info = env.step(action)
-#     if done:
-#         i+=1
-#         print(i)
-#         env.reset()
 
-# env.close()
-# gym.upload("/tmp/gym-results", api_key="YOUR_API_KEY")
-env.close()
+# mj_path, _ = mujoco_py.utils.discover_mujoco()
+# xml_path = os.path.join(mj_path, 'model', 'humanoid.xml')
+# model = mujoco_py.load_model_from_path(xml_path)
+# sim = mujoco_py.MjSim(model)
+# print(sim.data.qpos)
+# sim.step()
+# print(sim.data.qpos)
+
+# import gym
+# import numpy as np
+# from itertools import count
+# env = gym.make("InvertedPendulum-v2")
+# observation = env.reset()
+# # q_pos = np.array([0.0,3.0])
+# # q_vel = np.array([0.0,0.0])
+# # env.set_state(q_pos, q_vel)
+# # observation = np.array(q_pos, q_vel)
+# env.render()
+# for t in count():
+#   # env.render()
+#   action = env.action_space.sample()
+#   observation, reward, done, info = env.step(action)
+#   # if done:
+#   #   # observation = env.reset()
+#   #   env.set_state(q_pos, q_vel)
+#   #   observation = np.array(q_pos, q_vel)
+
+# # env.close()
+
+
+import torch
+import torch.distributions as dist
+
+mean = torch.Tensor([1]) 
+std = torch.Tensor([[0.1]])
+
+torch.manual_seed(0)
+
+# p1 = dist.Normal(mean, std)
+p2 = dist.MultivariateNormal(mean, std)
+
+print(p2.sample())

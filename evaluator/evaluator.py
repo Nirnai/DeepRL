@@ -1,174 +1,146 @@
 import os
 import numpy as np
-import pandas as pd
+# import pandas as pd
 from copy import deepcopy
 from itertools import count
 # from plot import plot_dataset
 
 
 class Evaluator():
-    def __init__(self, env, algorithm, total_timesteps=0, averaging_window=20):
-        self.alg_name = algorithm.name
-        self.env_name = env.spec.id
+    def __init__(self, algorithm, total_timesteps=1e6, eval_timesteps=1000, averaging_window=20):
         self.alg = algorithm
-        self.env = env
         self.param = algorithm.param
-
+        self._alg_name = algorithm.name
+        self._env_name = algorithm.env.spec.id
         # Parameters
-        self.total_timesteps = int(total_timesteps)
-        self.eval_timesteps = self.alg.param.BATCH_SIZE
-        self.eval_episodes = averaging_window
-        self.desired_average_return = env.spec.reward_threshold
-        if self.desired_average_return is None:
-            self.desired_average_return = 0
-        self.log_interval = 10
-        
+        self._total_timesteps = int(total_timesteps)
+        self._eval_timesteps = int(eval_timesteps)
+        self._window = averaging_window
+        self._desired_average_return = algorithm.env.spec.reward_threshold
+        self._log_interval = 1
         # Metrics
-        self.curr_episode = 0
-        self.returns = [0.0]
-        self.average_returns = []
-        self.policy_entropy = []
-        self.value_loss = []
+        self._curr_episode = 0
+        self._returns = [0.0]
+        self._average_returns = []
+        self._metrics = dict()
+        # Checks
+        self._solved = False
 
-        # # Checks
-        self.solved = False
 
-    def evaluate(self, output, episodes=2000, samples=10, seed=0):
-        self.episodes = episodes
-        output_filename = "{}/{}_{}".format(output, self.alg_name, self.env_name)
+    def evaluate(self, output, samples=10, seed=100, mode='online'):
+        if not os.path.isdir(output):  
+            os.mkdir(output)
+        output_filename = "{}/{}_{}".format(output, self._alg_name, self._env_name)
         seeds = []
         np.random.seed(seed)
-        
         for i in range(samples):
             seeds.append(np.random.randint(0,100))
-            self.seed(seeds[i])
+            self._seed(seeds[i])
             self.reset()
-            self.run()
+            self._train(eval_mode=mode)
             self.save_returns(output_filename)
-            self.save_value_loss(output_filename)
-            self.save_policy_entropy(output_filename)
-        # plot_dataset(output_filename + '.npz')
-
-
-    def run(self):
-        state = self.env.reset()
-        for t in range(self.total_timesteps):
-            state = self.train(state)
-            if t % self.eval_timesteps == 0:
-                self.eval()
-                state = self.env.reset()
-
-
-    def train(self, state):
-        # Act
-        state, reward, done = self.alg.act(state, exploit=False)
-        # Learn
-        # loss, entropy = 
-        # TODO: Sum of entropy (trajectory) and mse loss of value
-        loss, entropy = self.alg.learn()
-
-        # Eval
-        self.process_value_loss(loss)
-        self.process_policy_entropy(entropy)
-        return state
-
-    
-    def eval(self):
-        eval_alg = deepcopy(self.alg)
-        state = eval_alg.env.reset()
-        while True:
-            # Act
-            state, reward, done = eval_alg.act(state, exploit=True)
-            # Eval
-            self.process_rewards(reward, done)
-            if(self.curr_episode == self.eval_episodes):
-                self.average_returns.append(np.mean(self.returns))
-                self.print_progress()
-                self.returns = [0.0]
-                self.curr_episode = 0
-                break
-
-
-    def process(self, reward, done, value_loss=None, policy_entropy=None):
-        self.process_rewards(reward, done)
-        if value_loss is not None:
-            self.process_value_loss(value_loss)
-        if policy_entropy is not None:
-            self.process_policy_entropy(policy_entropy)
-
-
-    def process_rewards(self, reward, done):
-        if type(reward) != list:
-            reward = [reward]
-        if type(done) != list:
-            done = [done]
-        for reward, done in zip(reward, done): 
-            if done:
-                self.curr_episode += 1
-                # self.average_returns = np.append(self.average_returns, np.mean(self.returns[-self.avaraging_window:]))
-                if self.curr_episode < self.eval_episodes:
-                    self.returns.append(0.0)
-                # if self.curr_episode % self.log_interval == 0:
-                #     self.progress()
-                
-            else:
-                self.returns[-1] += reward
-            # self.solved = self.alg.steps == self.total_timesteps
-    
-    def process_value_loss(self, loss):
-        if loss is not None:
-            self.value_loss.append(loss)
-    
-    def process_policy_entropy(self, entropy):
-        if entropy is not None:
-            self.policy_entropy.append(entropy)
+            self.save_metrics(output_filename)
 
     def save_returns(self, path):
         returns_file = '{}_returns.npz'.format(path)
         samples = []
         if os.path.isfile(returns_file):
             samples = [array for array in np.load(returns_file).values()]
-        samples.append(self.average_returns)
-        np.savez(path, *samples)
+        samples.append(self._average_returns)
+        np.savez(returns_file[:-4], *samples)
     
-    def save_value_loss(self, path):
-        loss_file = '{}_loss.npz'.format(path)
-        samples = []
-        if os.path.isfile(loss_file):
-            samples = [array for array in np.load(loss_file).values()]
-        samples.append(self.value_loss)
-        np.savez(path, *samples)
+    def save_metrics(self, path):
+        for key, values in self._metrics.items():
+            key.replace(" ", "")                
+            filename = '{}_{}.npz'.format(path, key)
+            samples = []
+            if os.path.isfile(filename):
+                samples = [array for array in np.load(filename).values()]
+            samples.append(values)
+            np.savez(filename[:-4], *samples)
 
-    def save_policy_entropy(self, path):
-        entropy_file = '{}_entropy.npz'.format(path)
-        samples = []
-        if os.path.isfile(entropy_file):
-            samples = [array for array in np.load(entropy_file).values()]
-        samples.append(self.policy_entropy)
-        np.savez(path, *samples)
+    def reset(self):
+        self._curr_episode = 0
+        self._returns = [0.0]
+        self._average_returns = []
+        self._metrics = dict()
+        self._solved = False
+        self.alg.reset()
 
 
-    def print_progress(self):
+    def _train(self, eval_mode='online'):
+        done = True
+        for t in range(self._total_timesteps):
+            if done:
+                state = self.alg.env.reset()
+            state, reward, done = self._step(state)
+            if eval_mode is 'online':
+                self._eval_online(reward, done)
+            elif eval_mode is 'offline':
+                self._eval_offline()
+            else: 
+                NotImplementedError
+
+    def _step(self, state):
+        # Act
+        state, reward, done = self.alg.act(state, exploit=False)
+        # Learn
+        metrics = self.alg.learn()
+        # Collect Metrics
+        self._log_metrics(metrics)
+
+        return state, reward, done
+
+    def _eval_online(self, reward, done):
+        self._log_reward(reward, done)
+        if done:
+            self._average_returns.append(np.mean(self._returns[-self._window:-1]))
+            if self._curr_episode % self._log_interval == 0:
+                self._print_progress()
+
+    def _eval_offline(self):
+        if self.alg.steps % self._eval_timesteps == 0:
+            eval_alg = deepcopy(self.alg)
+            state = eval_alg.env.reset()
+            while True:
+                state, reward, done = eval_alg.act(state, exploit=True)
+                self._log_reward(reward, done)
+                if(self._curr_episode == self._window):
+                    self._average_returns.append(np.mean(self._returns))
+                    self._print_progress()
+                    self._returns = [0.0]
+                    self._curr_episode = 0
+                    break
+
+
+    def _log_reward(self, reward, done):
+        if done:
+            self._curr_episode += 1
+            self._returns.append(0.0)
+        else:
+            self._returns[-1] += reward
+
+    def _log_metrics(self, metrics):
+        if type(metrics) is dict:
+            for key, value in metrics.items():
+                if value is not None:
+                    if key in self._metrics:
+                        self._metrics[key].append(value)
+                    else:
+                        self._metrics[key] = [value]
+
+
+    def _print_progress(self):
         print("Steps: {:,}".format(self.alg.steps))
-        print("Average Reward: {:.2f}".format(self.average_returns[-1]))
-        print("Goal Average Reward: {}".format(self.desired_average_return))
-        if self.value_loss:
-            print("Critic Loss: {:.2f}".format(self.value_loss[-1]))
-        if self.policy_entropy:
-            print("Policy Entropy: {:.2f}".format(self.policy_entropy[-1]))
+        print("Average Reward: {:.2f}".format(self._average_returns[-1]))
+        print("Goal Average Reward: {}".format(self._desired_average_return))
+        for key, value in self._metrics.items():
+            print("{}: {:.2f}".format(key, self._metrics[key][-1]))
         print("------------------------------------")
     
 
-    def seed(self, seed):
-        self.env.seed(seed)
+    def _seed(self, seed):
+        self.alg.env.seed(seed)
         self.alg.seed(seed)
 
 
-    def reset(self):
-        self.curr_episode = 0
-        self.returns = [0.0]
-        self.average_returns = []
-        self.value_loss = []
-        self.policy_entropy = []
-        self.solved = False
-        self.alg.reset()

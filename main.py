@@ -1,10 +1,18 @@
+# import os
+# os.environ['LD_LIBRARY_PATH'] = "$LD_LIBRARY_PATH:/home/nirnai/.mujoco/mujoco200/bin"
+
+
 import itertools
 import gym 
+try:
+    import mujoco_py
+except ImportError:
+    pass
 import torch
-from algorithms import VPG, A2C, PPO, TRPO, SAC, Test
+from algorithms import VPG, A2C, PPO, TRPO, SAC, CGP, Test
 from evaluator import Evaluator, plot_dataset
 
-from evaluation import Evaluation
+# from evaluation import Evaluation
 
 if __name__ == '__main__':
 
@@ -12,6 +20,13 @@ if __name__ == '__main__':
     # Environment
     # env = gym.make('CartPole-v1')
     env = gym.make('Pendulum-v0')
+    # env = gym.make('InvertedPendulum-v2')
+    # env = gym.make('HalfCheetah-v2')
+    
+
+    # Mujoco
+    # saved_state = env.sim.get_state()
+    # env.sim.set_state(saved_state)
 
     # RL Algorithm
     # alg = DQN(env)
@@ -19,14 +34,15 @@ if __name__ == '__main__':
     # alg = A2C(env)
     # alg = PPO(env)
     # alg = SAC(env)
-    alg = TRPO(env)
+    # alg = TRPO(env)
     # alg = Test(env)
 
+    alg = CGP(env)
 
     ######### New Eval
-    evl = Evaluator(env, alg, total_timesteps=1e6, averaging_window=100)
-    evl.evaluate('test/output_data', seed=1 , samples=10)
-    plot_dataset('test/output_data/TRPO_Pendulum-v0.npz', step = 1)
+    evl = Evaluator(alg, total_timesteps=5e4)
+    evl.evaluate('data')
+    # plot_dataset('test/output_data/TRPO_Pendulum-v0.npz', step = 1)
     # plot_dataset('test/output_data/TRPO_Pendulum-v0.npz', step = 1, statistic='normal')
     #################
 
