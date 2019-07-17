@@ -64,7 +64,7 @@ class Policy(nn.Module):
         activation = getattr(nn.modules.activation, activation)()
         layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
         affine_layers = nn.Sequential(*layers)
-        affine_layers.apply(xavier_init)
+        # affine_layers.apply(xavier_init)
 
         if self.action_space is 'discrete':
             policy_output = softmax_layer(architecture[-2], self.num_outputs)
@@ -72,7 +72,7 @@ class Policy(nn.Module):
             policy_layers = nn.Sequential(affine_layers, policy_output)
         elif self.action_space is 'continuous':
             action_mean = linear_layer(architecture[-2], self.num_outputs)
-            action_mean.apply(init_policy_weights)
+            # action_mean.apply(init_policy_weights)
             policy_layers = nn.Sequential(affine_layers, action_mean)
             self.action_log_std = nn.Parameter(torch.ones(self.num_outputs))
         self._policy = unwrap_layers(policy_layers)
@@ -130,15 +130,15 @@ class Value(nn.Module):
         activation = getattr(nn.modules.activation, activation)()
         layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
         affine_layers = nn.Sequential(*layers)
-        affine_layers.apply(xavier_init)
+        # affine_layers.apply(xavier_init)
 
         output_layer = linear_layer(architecture[-2], 1)
-        output_layer.apply(init_output_weights)
+        # output_layer.apply(init_output_weights)
         self.value = unwrap_layers(nn.Sequential(affine_layers, output_layer))
         # self.value.apply(xavier_init)
 
     def forward(self, state):
-        return self.value(state)
+        return self.value(state).squeeze()
 
 
 class QValue(nn.Module):
@@ -160,4 +160,4 @@ class QValue(nn.Module):
 
     def forward(self, state, action):
         xu = torch.cat([state, action], dim=-1)
-        return self.qvalue(xu)
+        return self.qvalue(xu).squeeze()

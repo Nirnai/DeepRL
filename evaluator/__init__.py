@@ -1,3 +1,3 @@
 from .evaluator import Evaluator
-from .plot import plot_dataset
+from .plot import *
 from .statistics import *

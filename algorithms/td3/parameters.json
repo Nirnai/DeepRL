@@ -11,7 +11,7 @@
         64,
         1
     ],
-    "CEM_ITERATIONS": 2,
-    "CEM_BATCH": 64,
-    "CEM_TOPK": 6
+    "POLICY_NOISE": 0.2,
+    "POLICY_CLIP": 0.5,
+    "POLICY_UPDATE_FREQ": 2
 }

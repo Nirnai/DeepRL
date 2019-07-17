@@ -2,23 +2,41 @@ import torch
 from copy import deepcopy
 from torch.distributions.kl import kl_divergence
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
-from algorithms import ActorCritic, HyperParameter, onPolicy
+from algorithms import BaseRL, OnPolicy, VModel
+from utils.policies import GaussianPolicy
 
 
-class TRPO(ActorCritic):
+class TRPO(BaseRL, OnPolicy):
     def __init__(self, env):
-        super(TRPO, self).__init__(env)
+        super(TRPO,self).__init__(env)
         self.name = "TRPO"
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    @onPolicy
+        self.critic = VModel(self.param)
+        self.actor = GaussianPolicy( self.param.ARCHITECTURE,
+                                     self.param.ACTIVATION,
+                                     self.param.ACTOR_LEARNING_RATE).to(self.device)
+        self.steps = 0
+
+    def act(self, state, deterministic=False):
+        action = self.actor(torch.from_numpy(state).float())
+        next_state, reward, done, _ = self.env.step(action.numpy())
+        self._memory.push(state, action, reward, next_state, done) 
+        self.steps += 1
+        if done:
+            next_state = self.env.reset()
+        return next_state, reward, done
+    
+
+    @OnPolicy.loop
     def learn(self):
         rollouts = self.onPolicyData
         # Compute Advantages
-        advantages = self.gae(rollouts)    
-        # Critic Step
-        critic_loss = advantages.pow(2.).mean()
-        self.optimize_critic(critic_loss)
-        # Actor Step
+        advantages = self.gae(rollouts) 
+        # Update Critic
+        critic_loss = advantages.pow(2).mean()
+        self.critic.optimize(critic_loss)
+        # Update Actor
         pg = self.policy_gradient(advantages, rollouts)
         npg = self.natural_gradient(pg, rollouts)
         parameters = self.linesearch(npg, pg, rollouts)
@@ -26,8 +44,32 @@ class TRPO(ActorCritic):
 
         metrics = dict()
         metrics['value loss'] = critic_loss.item()
-        metrics['policy entropy'] = self.actor.entropy(rollouts.state).sum().item()
+        metrics['policy entropy'] = self.actor.entropy(rollouts.state).mean().item()
         return metrics
+
+# class TRPO(ActorCritic):
+#     def __init__(self, env):
+#         super(TRPO, self).__init__(env)
+#         self.name = "TRPO"
+
+#     @onPolicy
+#     def learn(self):
+#         rollouts = self.onPolicyData
+#         # Compute Advantages
+#         advantages = self.gae(rollouts)    
+#         # Critic Step
+#         critic_loss = advantages.pow(2.).mean()
+#         self.optimize_critic(critic_loss)
+#         # Actor Step
+#         pg = self.policy_gradient(advantages, rollouts)
+#         npg = self.natural_gradient(pg, rollouts)
+#         parameters = self.linesearch(npg, pg, rollouts)
+#         self.optimize_actor(parameters)
+
+#         metrics = dict()
+#         metrics['value loss'] = critic_loss.item()
+#         metrics['policy entropy'] = self.actor.entropy(rollouts.state).sum().item()
+#         return metrics
         
 
     ################################################################
@@ -37,7 +79,7 @@ class TRPO(ActorCritic):
         vector_to_parameters(new_parameters, self.actor.parameters())
 
     def policy_gradient(self, advantages, rollouts):
-        log_probs = self.actor.log_probs(rollouts.state, rollouts.action)
+        log_probs = self.actor.log_prob(rollouts.state, rollouts.action)
         pg_objective = (log_probs * advantages.detach()).mean()
         return parameters_to_vector(torch.autograd.grad(pg_objective, self.actor.parameters()))
 
@@ -58,16 +100,16 @@ class TRPO(ActorCritic):
 
     def gae(self, rollouts):
         '''  Generaized Advantage Estimation '''
-        values = self.critic(rollouts.state).squeeze()
+        values = self.critic(rollouts.state)
         with torch.no_grad():
-            next_value = self.critic(rollouts.next_state[-1])
+            next_value = self.critic(rollouts.next_state[-1]).unsqueeze(-1)
         values = torch.cat((values, next_value))
         advantages = [0] * (len(rollouts.reward) + 1 )
         for t in reversed(range(len(rollouts.reward))):
             delta = rollouts.reward[t] + self.param.GAMMA * values[t+1] * rollouts.mask[t] - values[t]
             advantages[t] = delta + self.param.GAMMA * self.param.LAMBDA * rollouts.mask[t] * advantages[t+1]
         advantages = torch.stack(advantages[:-1])
-        return advantages#(advantages - advantages.mean()) / advantages.std() 
+        return (advantages - advantages.mean()) / advantages.std() 
 
     def get_kl(self, model, rollouts):
         ''' Computes the KL-Divergance between the current policy and the model passed '''
@@ -99,7 +141,7 @@ class TRPO(ActorCritic):
         return x
 
     def linesearch(self, npg, pg, rollouts):
-        params_curr = self.actor.get_params()
+        params_curr = parameters_to_vector(self.actor.parameters())
         for k in range(self.param.NUM_BACKTRACK):
             params_new = params_curr + self.param.ALPHA**k * npg 
             model_new = deepcopy(self.actor)

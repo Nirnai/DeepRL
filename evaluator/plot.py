@@ -34,6 +34,24 @@ def plot_dataset(path, total_steps=1e6, goal=0 ,statistic=None, show=True):
     return fig
 
 
+def compare_datasets(paths, total_steps=1e6, goal=0, show=True):
+    fig = plt.figure()
+    for path in paths:
+        dataset = load_dataset(path)
+        label = os.path.basename(path)[0:4]
+        steps = np.linspace(0,total_steps, len(dataset[0]))
+        mean, low, high = mean_confidance(dataset)
+        plt.plot(steps, mean, label=label)
+        plt.fill_between(steps, low, high, alpha=0.2)
+        plt.legend()
+        plt.xlabel('Steps')
+        plt.ylabel('Average Reward')
+    plt.plot(steps, [goal] * len(steps), 'k--', label = 'goal reward')
+    if show:
+        plt.show()
+    return fig
+
+
 if __name__ == '__main__':
     fig = plot_dataset('example.npz', statistic='normal')
     plt.show()

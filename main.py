@@ -9,7 +9,7 @@ try:
 except ImportError:
     pass
 import torch
-from algorithms import VPG, A2C, PPO, TRPO, SAC, CGP, Test
+from algorithms import VPG, A2C, PPO, TRPO, SAC, CGP, TD3
 from evaluator import Evaluator, plot_dataset
 
 # from evaluation import Evaluation
@@ -29,19 +29,19 @@ if __name__ == '__main__':
     # env.sim.set_state(saved_state)
 
     # RL Algorithm
-    # alg = DQN(env)
-    # alg = VPG(env)
-    # alg = A2C(env)
+    alg = TRPO(env)
     # alg = PPO(env)
     # alg = SAC(env)
-    # alg = TRPO(env)
-    # alg = Test(env)
-
-    alg = CGP(env)
+    # alg = CGP(env)
+    # alg = TD3(env)
 
     ######### New Eval
-    evl = Evaluator(alg, total_timesteps=5e4)
+    evl = Evaluator(alg, total_timesteps=1e6)
     evl.evaluate('data')
+
+    data= ['data/sac/VFunction_QFunction/SAC_Pendulum-v0_returns.npz', 
+           'data/sac/QFunctions/SAC_Pendulum-v0_returns.npz', 
+           'data/cgp/CGP_Pendulum-v0_returns.npz']
     # plot_dataset('test/output_data/TRPO_Pendulum-v0.npz', step = 1)
     # plot_dataset('test/output_data/TRPO_Pendulum-v0.npz', step = 1, statistic='normal')
     #################
