@@ -19,7 +19,7 @@ class TRPO(BaseRL, OnPolicy):
         self.steps = 0
 
     def act(self, state, deterministic=False):
-        action = self.actor(torch.from_numpy(state).float())
+        action = self.actor(torch.from_numpy(state).float().to(self.device))
         next_state, reward, done, _ = self.env.step(action.numpy())
         self._memory.push(state, action, reward, next_state, done) 
         self.steps += 1
