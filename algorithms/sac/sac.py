@@ -42,6 +42,7 @@ class SAC(BaseRL, OffPolicy):
             q_target = batch.reward + self.param.GAMMA * batch.mask * torch.min(q1_next, q2_next) - self.param.ALPHA * log_prob_next
         t1 = time.time()
         critic_loss = F.mse_loss(q1, q_target) + F.mse_loss(q2, q_target)
+        print("Loss Device: {}".format(critic_loss.device))
         self.critic.optimize(critic_loss)
         t2 = time.time()
         print("Update: {:.3f}ms".format((t2-t1)*1000))
