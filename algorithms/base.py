@@ -87,6 +87,8 @@ class QModel():
         self.Q2_target = QValue(param.ARCHITECTURE, param.ACTIVATION).to(self.device)
         self.Q1_target.load_state_dict(self.Q1.state_dict())
         self.Q2_target.load_state_dict(self.Q1.state_dict())
+        self.Q1_target.eval()
+        self.Q2_target.eval()
         self.Q_optim = optim.Adam(list(self.Q1.parameters()) + list(self.Q2.parameters()), lr=param.LEARNING_RATE)
         self._tau = param.TAU
     

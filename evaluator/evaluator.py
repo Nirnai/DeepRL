@@ -17,7 +17,7 @@ class Evaluator():
         self._eval_timesteps = int(eval_timesteps)
         self._window = averaging_window
         self._desired_average_return = algorithm.env.spec.reward_threshold
-        self._log_interval = 25
+        self._log_interval = 1
         # Metrics
         self._curr_episode = 0
         self._returns = [0.0]

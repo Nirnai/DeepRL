@@ -11,21 +11,23 @@ class TD3(BaseRL, OffPolicy):
     def __init__(self, env):
         super(TD3, self).__init__(env)
         self.name = "TD3"
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         self.critic = QModel(self.param)
         self.actor = DeterministicPolicy(self.param.ARCHITECTURE, 
                                          self.param.ACTIVATION,
-                                         self.param.LEARNING_RATE)
+                                         self.param.LEARNING_RATE).to(self.device)
         self.actor_target = deepcopy(self.actor)
         self.steps = 0                    
 
     
     def act(self, state, noise=0.1):
         with torch.no_grad():
-            action = self.actor(torch.from_numpy(state).float())
+            action = self.actor(torch.from_numpy(state).float().to(self.device))
         if noise != 0:
             action += torch.randn(action.shape) * noise 
             action = torch.clamp(action, self.env.action_space.low.item(), self.env.action_space.high.item())
-        next_state, reward, done, _ = self.env.step(action.numpy()) 
+        next_state, reward, done, _ = self.env.step(action.cpu().numpy()) 
         self._memory.push(state, action, reward, next_state, done)
         self.steps += 1
         if done:

@@ -7,16 +7,17 @@ class PPO(BaseRL, OnPolicy):
     def __init__(self, env):
         super(PPO, self).__init__(env)
         self.name = 'PPO'
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.critic = VModel(self.param)
         self.actor = GaussianPolicy( self.param.ARCHITECTURE,
                                      self.param.ACTIVATION,
-                                     self.param.ACTOR_LEARNING_RATE)
+                                     self.param.ACTOR_LEARNING_RATE).to(self.device)
         self.steps = 0
 
     def act(self, state, deterministic=False):
-        action = self.actor(torch.from_numpy(state).float())
-        next_state, reward, done, _ = self.env.step(action.numpy())
+        action = self.actor(torch.from_numpy(state).float().to(self.device))
+        next_state, reward, done, _ = self.env.step(action.cpu().numpy())
         self._memory.push(state, action, reward, next_state, done) 
         self.steps += 1
         if done:

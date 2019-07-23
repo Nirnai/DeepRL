@@ -18,13 +18,14 @@ class TRPO(BaseRL, OnPolicy):
                                      self.param.ACTOR_LEARNING_RATE).to(self.device)
         self.steps = 0
 
+
     def act(self, state, deterministic=False):
         action = self.actor(torch.from_numpy(state).float().to(self.device))
         next_state, reward, done, _ = self.env.step(action.cpu().numpy())
-        self._memory.push(state, action, reward, next_state, done) 
-        self.steps += 1
         if done:
             next_state = self.env.reset()
+        self._memory.push(state, action, reward, next_state, done) 
+        self.steps += 1
         return next_state, reward, done
     
 
@@ -37,40 +38,17 @@ class TRPO(BaseRL, OnPolicy):
         critic_loss = advantages.pow(2).mean()
         self.critic.optimize(critic_loss)
         # Update Actor
+        advantages = (advantages - advantages.mean()) / advantages.std()
         pg = self.policy_gradient(advantages, rollouts)
         npg = self.natural_gradient(pg, rollouts)
         parameters = self.linesearch(npg, pg, rollouts)
         self.optimize_actor(parameters)
 
         metrics = dict()
-        metrics['value loss'] = critic_loss.item()
-        metrics['policy entropy'] = self.actor.entropy(rollouts.state).mean().item()
+        metrics['loss'] = critic_loss.item()
+        metrics['value'] = self.critic(rollouts.next_state[(1-rollouts.mask).type(torch.BoolTensor)]).mean().item()
+        metrics['entropy'] = self.actor.entropy(rollouts.state).mean().item()
         return metrics
-
-# class TRPO(ActorCritic):
-#     def __init__(self, env):
-#         super(TRPO, self).__init__(env)
-#         self.name = "TRPO"
-
-#     @onPolicy
-#     def learn(self):
-#         rollouts = self.onPolicyData
-#         # Compute Advantages
-#         advantages = self.gae(rollouts)    
-#         # Critic Step
-#         critic_loss = advantages.pow(2.).mean()
-#         self.optimize_critic(critic_loss)
-#         # Actor Step
-#         pg = self.policy_gradient(advantages, rollouts)
-#         npg = self.natural_gradient(pg, rollouts)
-#         parameters = self.linesearch(npg, pg, rollouts)
-#         self.optimize_actor(parameters)
-
-#         metrics = dict()
-#         metrics['value loss'] = critic_loss.item()
-#         metrics['policy entropy'] = self.actor.entropy(rollouts.state).sum().item()
-#         return metrics
-        
 
     ################################################################
     ########################## Utilities ###########################
@@ -109,7 +87,7 @@ class TRPO(BaseRL, OnPolicy):
             delta = rollouts.reward[t] + self.param.GAMMA * values[t+1] * rollouts.mask[t] - values[t]
             advantages[t] = delta + self.param.GAMMA * self.param.LAMBDA * rollouts.mask[t] * advantages[t+1]
         advantages = torch.stack(advantages[:-1])
-        return (advantages - advantages.mean()) / advantages.std() 
+        return advantages 
 
     def get_kl(self, model, rollouts):
         ''' Computes the KL-Divergance between the current policy and the model passed '''

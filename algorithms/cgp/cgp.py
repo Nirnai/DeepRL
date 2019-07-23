@@ -11,6 +11,7 @@ class CGP(BaseRL, OffPolicy):
         self.name = "CGP"
         self.Q = QModel(self.param)
         self.policy = CrossEntropyGuidedPolicy( self.Q, 
+                                                self._action_dim,
                                                 self.param.CEM_ITERATIONS, 
                                                 self.param.CEM_BATCH, 
                                                 self.param.CEM_TOPK)

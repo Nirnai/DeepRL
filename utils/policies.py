@@ -111,19 +111,20 @@ class DeterministicPolicy(nn.Module):
  
 
 class CrossEntropyGuidedPolicy():
-    def __init__(self, Q, iterations, batch, topk):
+    def __init__(self, Q, action_dim, iterations, batch, topk):
         self.Q = Q
+        self.action_dim = action_dim
         self.iterations = iterations
         self.batch = batch
         self.topk = topk
 
     def __call__(self, state):
         if state.dim() == 2:
-            mean = torch.zeros(state.shape[0],1)
-            std = torch.ones(state.shape[0],1)
+            mean = torch.zeros(state.shape[0], self.action_dim)
+            std = torch.ones(state.shape[0], self.action_dim)
         else:
-            mean = torch.Tensor([0.0])
-            std = torch.Tensor([1.0])
+            mean = torch.Tensor([0.0] * self.action_dim)
+            std = torch.Tensor([1.0] * self.action_dim)
         
         for i in range(self.iterations):
             p = dist.Normal(mean, std)
@@ -131,10 +132,16 @@ class CrossEntropyGuidedPolicy():
             actions = p.sample((self.batch,))
             with torch.no_grad():
                 Qs, _ = self.Q(states, actions)
-            Is = Qs.topk(self.topk , dim=0)[1].unsqueeze(-1)
-            mean = actions.gather(0, Is).mean(dim = 0)
-            std = actions.gather(0, Is).std(dim = 0)
-        return actions.gather(0, Is[0:1])[0]
+            Is = Qs.topk(self.topk , dim=0)[1]
+            if Is.dim() == 2:
+                mean = torch.cat([torch.index_select(a, 0, i).unsqueeze(0) for a, i in zip(actions, Is)]).mean(dim = 0)
+                std = torch.cat([torch.index_select(a, 0, i).unsqueeze(0) for a, i in zip(actions, Is)]).std(dim = 0)
+                best_action = torch.cat([torch.index_select(a, 0, i).unsqueeze(0) for a, i in zip(actions, Is)])[0]
+            else:
+                mean = actions[Is].mean(dim = 0)
+                std = actions[Is].std(dim = 0)
+                best_action = actions[Is[0]]
+        return best_action
 
 
 

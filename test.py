@@ -32,15 +32,15 @@
 # # env.close()
 
 
-import torch
-import torch.distributions as dist
+# import torch
+# import torch.distributions as dist
 
-mean = torch.Tensor([1]) 
-std = torch.Tensor([[0.1]])
+# mean = torch.Tensor([1]) 
+# std = torch.Tensor([[0.1]])
 
-torch.manual_seed(0)
+# torch.manual_seed(0)
 
-# p1 = dist.Normal(mean, std)
-p2 = dist.MultivariateNormal(mean, std)
+# # p1 = dist.Normal(mean, std)
+# p2 = dist.MultivariateNormal(mean, std)
 
-print(p2.sample())
+# print(p2.sample())
