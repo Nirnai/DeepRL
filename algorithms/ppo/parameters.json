@@ -3,14 +3,14 @@
     "EPOCHS": 4,
     "GAMMA" : 0.99,
     "LAMBDA" : 0.95,
-    "LEARNING_RATE" : 1e-2,
-    "ACTIVATION" : "ReLU",
+    "ACTOR_LEARNING_RATE" : 1e-2,
+    "CRITIC_LEARNING_RATE": 1e-1,
+    "ACTIVATION" : "Tanh",
     "ARCHITECTURE" : [
         3,
         64,
         64,
         1
     ],
-    "SEED" : null, 
     "CLIP" : 0.2
 }

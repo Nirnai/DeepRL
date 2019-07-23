@@ -1,14 +1,14 @@
 {
-    "BATCH_SIZE": 20,
-    "GAMMA" : 0.99,
-    "LAMBDA" : 0.95,
-    "STEPS" : 320,
-    "LEARNING_RATE" : 1e-2,
-    "ACTIVATION" : "ReLU",
-    "ACTOR_ARCHITECTURE" : [
+    "ACTIVATION": "Tanh",
+    "GAMMA": 0.99,
+    "LAMBDA": 0.95,
+    "ACTOR_LEARNING_RATE": 1e-3,
+    "CRITIC_LEARNING_RATE":1e-3,
+    "ARCHITECTURE": [
         4,
-        256,
+        64,
+        64,
         2
-    ],
-    "SEED" : null
+    ], 
+    "BATCH_SIZE" : 5
 }

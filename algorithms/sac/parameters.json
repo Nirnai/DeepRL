@@ -1,5 +1,5 @@
 {
-    "ACTIVATION" : "ReLU",
+    "ACTIVATION" : "Tanh",
     "ARCHITECTURE" : [
         4,
         64,
@@ -9,7 +9,8 @@
     "LEARNING_RATE": 1e-3,
     "SEED" : null,
     "MEMORY_SIZE": 1e6,
-    "BATCH_SIZE": 128,
+    "BATCH_SIZE": 64,
     "GAMMA" : 0.99,
-    "TAU": 0.995
+    "TAU": 0.005, 
+    "ALPHA": 0.2
 }

@@ -1,0 +1,11 @@
+{
+    "ACTIVATION": "ReLU",
+    "GAMMA": 0.99,
+    "LEARNING_RATE": 1e-3,
+    "ARCHITECTURE": [
+        4,
+        64,
+        2
+    ], 
+    "BATCH_SIZE" : 100
+}

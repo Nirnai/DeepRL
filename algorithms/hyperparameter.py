@@ -1,10 +1,10 @@
 import json
-import yaml
+# import ruamel.yaml as ryaml
 
 class HyperParameter:
     def __init__(self, path=None):
         # # Network Architecture for Neural Network (e.g. [4,128,2]) 
-        self.ARCHITECTURE = []
+        # self.ARCHITECTURE = []
 
         # Activations Function
         # Possible activations in Pytorch:
@@ -12,7 +12,7 @@ class HyperParameter:
         # 'LogSigmoid', 'LogSoftmax', 'PReLU', 'RReLU', 'ReLU', 'ReLU6', 'SELU', 
         # 'Sigmoid', 'Softmax', 'Softmax2d', 'Softmin', 'Softplus', 'Softshrink', 
         # 'Softsign', 'Tanh', 'Tanhshrink', 'Threshold'
-        self.ACTIVATION = None
+        # self.ACTIVATION = None
 
         # # Loss Function
         # # Possible Loss functions in Pytorch
@@ -39,8 +39,18 @@ class HyperParameter:
             parameters = json.load(infile)
             for key in parameters:
                 self.__setattr__(key, parameters[key])
-
-
+            
+    # def load_yaml(self, path):
+    #     with open(path, 'r') as infile:
+    #         parameters = ryaml.load(infile)
+    #         for key in parameters.keys():
+    #             self.__setattr__(key, parameters[key])
+    
+    # def save_yaml(self, path):
+    #     yaml = ryaml.YAML()
+    #     yaml.register_class(HyperParameter)
+    #     with open(path, 'w') as outfile:
+    #         yaml.dump(self)
     # TODO: Epsilon Decay should be part of evaluation
 
 

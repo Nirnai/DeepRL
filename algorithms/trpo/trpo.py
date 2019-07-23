@@ -1,116 +1,100 @@
-import inspect
-import os
-
-import random 
-import numpy 
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.distributions as dist
-import torch.nn.functional as F
-
 from copy import deepcopy
 from torch.distributions.kl import kl_divergence
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
-from algorithms import RLAlgorithm, HyperParameter
-from utils.models import Policy, Value
-from utils.memory import RolloutBuffer
-from utils.env import getEnvInfo
+from algorithms import BaseRL, OnPolicy, VModel
+from utils.policies import GaussianPolicy
 
 
-class TRPO(RLAlgorithm):
+class TRPO(BaseRL, OnPolicy):
     def __init__(self, env):
-        super(TRPO, self).__init__(env)
+        super(TRPO,self).__init__(env)
         self.name = "TRPO"
 
-        parameters_file = os.path.dirname(inspect.getfile(self.__class__)) + '/parameters.json'
-        self.param = HyperParameter(parameters_file)
-        self.param.ARCHITECTURE[ 0 ] = self.state_dim
-        self.param.ARCHITECTURE[-1 ] = self.action_dim
-        architecture = self.param.ARCHITECTURE
-        activation = self.param.ACTIVATION
-
-        self.actor = Policy(architecture, activation, action_space=self.action_space)
-        self.critic = Value(architecture, activation)
-        self.critic_optim = optim.Adam(self.critic.parameters(), lr = self.param.LEARNING_RATE)
-        self.rolloutBuffer = RolloutBuffer()
+        self.critic = VModel(self.param)
+        self.actor = GaussianPolicy( self.param.ARCHITECTURE,
+                                     self.param.ACTIVATION,
+                                     self.param.ACTOR_LEARNING_RATE).to(self.device)
         self.steps = 0
-        self.done = False
 
-        
-    def act(self, state, exploit=False):
-        policy = self.actor(torch.from_numpy(state).float())
-        if exploit:
-            action = policy.mean.detach()
-        else:
-            action = policy.sample()
-        next_state, reward, done, _ = self.env.step(action.numpy()) 
-        self.rolloutBuffer.push(state, action, reward, next_state, done)
-        self.steps += 1
+
+    def act(self, state, deterministic=False):
+        action = self.actor(torch.from_numpy(state).float().to(self.device))
+        next_state, reward, done, _ = self.env.step(action.cpu().numpy())
         if done:
             next_state = self.env.reset()
+        self._memory.push(state, action, reward, next_state, done) 
+        self.steps += 1
         return next_state, reward, done
     
 
+    @OnPolicy.loop
     def learn(self):
-        if self.steps % self.param.BATCH_SIZE == 0:
-            batch = self.rolloutBuffer.sample()
-            states = torch.Tensor(batch.state)
-            actions = torch.stack(batch.action)
-            rewards = torch.Tensor(batch.reward)
-            next_states = torch.Tensor(batch.next_state)
-            mask = torch.Tensor(batch.mask)
+        rollouts = self.onPolicyData
+        # Compute Advantages
+        advantages = self.gae(rollouts) 
+        # Update Critic
+        critic_loss = advantages.pow(2).mean()
+        self.critic.optimize(critic_loss)
+        # Update Actor
+        advantages = (advantages - advantages.mean()) / advantages.std()
+        pg = self.policy_gradient(advantages, rollouts)
+        npg = self.natural_gradient(pg, rollouts)
+        parameters = self.linesearch(npg, pg, rollouts)
+        self.optimize_actor(parameters)
 
-            advantages = self.gae(states, next_states[-1], rewards, mask)   
-            advantages = (advantages - advantages.mean()) / advantages.std()  
+        metrics = dict()
+        metrics['loss'] = critic_loss.item()
+        metrics['value'] = self.critic(rollouts.next_state[(1-rollouts.mask).type(torch.BoolTensor)]).mean().item()
+        metrics['entropy'] = self.actor.entropy(rollouts.state).mean().item()
+        return metrics
 
-            self.critic_optim.zero_grad()
-            value_loss = advantages.pow(2.).mean()
-            value_loss.backward()
-            self.critic_optim.step() 
+    ################################################################
+    ########################## Utilities ###########################
+    ################################################################
+    def optimize_actor(self, new_parameters):
+        vector_to_parameters(new_parameters, self.actor.parameters())
 
-            advantages = advantages.detach()
-            p = self.actor(states)
-            log_probs = p.log_prob(actions).squeeze()
-            loss = (log_probs * advantages).mean()
-            pg = parameters_to_vector(torch.autograd.grad(loss, self.actor.parameters()))
+    def policy_gradient(self, advantages, rollouts):
+        log_probs = self.actor.log_prob(rollouts.state, rollouts.action)
+        pg_objective = (log_probs * advantages.detach()).mean()
+        return parameters_to_vector(torch.autograd.grad(pg_objective, self.actor.parameters()))
 
-            def get_kl(model):
-                with torch.no_grad():
-                    p_old = self.actor(states)
-                p_new = model(states)
-                d_kl = kl_divergence(p_old, p_new).mean()
-                return d_kl
-            
-            def Hx(x):
-                d_kl = get_kl(self.actor)    
-                grads = torch.autograd.grad(d_kl, self.actor.parameters(), create_graph=True)
-                grads = parameters_to_vector(grads)
-                Jx = torch.sum(grads * x)
-                Hx = torch.autograd.grad(Jx, self.actor.parameters())
-                Hx = parameters_to_vector(Hx)
-                return Hx + 0.1 * x
+    def natural_gradient(self, pg, rollouts):
+        def Hx(x):
+            ''' Computes the Hessian-Vector product for the KL-Divergance '''
+            d_kl = self.get_kl(self.actor, rollouts)    
+            grads = torch.autograd.grad(d_kl, self.actor.parameters(), create_graph=True)
+            grads = parameters_to_vector(grads)
+            Jx = torch.sum(grads * x)
+            Hx = torch.autograd.grad(Jx, self.actor.parameters())
+            Hx = parameters_to_vector(Hx)
+            return Hx + self.param.CG_DAMPING * x
 
-            stepdir = self.conjugate_gradient(Hx, pg, self.param.NUM_CG_ITER)  
-            stepsize = (2 * self.param.DELTA) / torch.dot(stepdir,Hx(stepdir))
-            npg = torch.sqrt(stepsize) * stepdir
-            params_new = self.linesearch(npg, pg, get_kl)
-            vector_to_parameters(params_new, self.actor.parameters())
-            del self.rolloutBuffer.memory[:]
+        stepdir = self.conjugate_gradient(Hx, pg, self.param.NUM_CG_ITER)  
+        stepsize = (2 * self.param.DELTA) / torch.dot(stepdir,Hx(stepdir))
+        return torch.sqrt(stepsize) * stepdir
 
-
-    def gae(self, states, next_state ,rewards, mask):
+    def gae(self, rollouts):
         '''  Generaized Advantage Estimation '''
-        values = self.critic(states).squeeze()
+        values = self.critic(rollouts.state)
         with torch.no_grad():
-            next_value = self.critic(next_state)
+            next_value = self.critic(rollouts.next_state[-1]).unsqueeze(-1)
         values = torch.cat((values, next_value))
-        advantages = [0] * (len(rewards)+1)
-        for t in reversed(range(len(rewards))):
-            delta = rewards[t] + self.param.GAMMA * values[t+1] * mask[t] - values[t]
-            advantages[t] = delta + self.param.GAMMA * self.param.LAMBDA * mask[t] * advantages[t+1]
-        return torch.stack(advantages[:-1])
+        advantages = [0] * (len(rollouts.reward) + 1 )
+        for t in reversed(range(len(rollouts.reward))):
+            delta = rollouts.reward[t] + self.param.GAMMA * values[t+1] * rollouts.mask[t] - values[t]
+            advantages[t] = delta + self.param.GAMMA * self.param.LAMBDA * rollouts.mask[t] * advantages[t+1]
+        advantages = torch.stack(advantages[:-1])
+        return advantages 
 
+    def get_kl(self, model, rollouts):
+        ''' Computes the KL-Divergance between the current policy and the model passed '''
+        with torch.no_grad():
+            p_old = self.actor.policy(rollouts.state)
+        p_new = model.policy(rollouts.state)
+        d_kl = kl_divergence(p_old, p_new).sum(dim=-1, keepdim=True).mean()
+        return d_kl
 
     def conjugate_gradient(self, A, b, n):
         x = torch.zeros_like(b)
@@ -133,27 +117,16 @@ class TRPO(RLAlgorithm):
                 break
         return x
 
-    def linesearch(self, npg, pg, get_kl):
-        params_curr = self.actor.get_params()
+    def linesearch(self, npg, pg, rollouts):
+        params_curr = parameters_to_vector(self.actor.parameters())
         for k in range(self.param.NUM_BACKTRACK):
             params_new = params_curr + self.param.ALPHA**k * npg 
             model_new = deepcopy(self.actor)
             vector_to_parameters(params_new, model_new.parameters())
             param_diff = params_new - params_curr
             surr_loss = torch.dot(pg,param_diff)
-            kl_div = get_kl(model_new)
+            kl_div = self.get_kl(model_new, rollouts)
             if surr_loss >= 0 and kl_div <= self.param.DELTA:
                 params_curr = params_new
                 break
         return params_curr
-    
-
-    def seed(self, seed):
-        self.param.SEED = seed
-        torch.manual_seed(self.param.SEED)
-        numpy.random.seed(self.param.SEED)
-        self.rng = random.Random(self.param.SEED)
-
-
-    def reset(self):
-        self.__init__(self.env)
