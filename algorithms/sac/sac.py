@@ -40,10 +40,13 @@ class SAC(BaseRL, OffPolicy):
         with torch.no_grad():
             q1_next, q2_next = self.critic.target(batch.next_state, new_action_next)
             q_target = batch.reward + self.param.GAMMA * batch.mask * torch.min(q1_next, q2_next) - self.param.ALPHA * log_prob_next
+        t1 = time.time()
         critic_loss = F.mse_loss(q1, q_target) + F.mse_loss(q2, q_target)
         self.critic.optimize(critic_loss)
+        t2 = time.time()
+        print("Update: {:.3f}ms".format((t2-t1)*1000))
+        print("------------------------------------")
 
-        t1 = time.time()
         # Update Actor
         new_action, log_prob = self.actor.rsample(batch.state)
         q1, q2 = self.critic(batch.state, new_action)
@@ -60,7 +63,4 @@ class SAC(BaseRL, OffPolicy):
         #     q1, q2 = self.critic(next_state, next_action)
         #     metrics['value'] = torch.min(q1,q2).mean().item()
         metrics['entropy'] = self.actor.entropy(batch.state).sum().item()
-        t2 = time.time()
-        print("Update: {:.3f}ms".format((t2-t1)*1000))
-        print("------------------------------------")
         return metrics
