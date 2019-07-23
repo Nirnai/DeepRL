@@ -34,7 +34,6 @@ class SAC(BaseRL, OffPolicy):
     @OffPolicy.loop
     def learn(self):
         batch = self.offPolicyData
-        t1 = time.time()
         # Update Critic
         q1, q2 = self.critic(batch.state, batch.action)
         new_action_next, log_prob_next = self.actor.rsample(batch.next_state)
@@ -44,6 +43,7 @@ class SAC(BaseRL, OffPolicy):
         critic_loss = F.mse_loss(q1, q_target) + F.mse_loss(q2, q_target)
         self.critic.optimize(critic_loss)
 
+        t1 = time.time()
         # Update Actor
         new_action, log_prob = self.actor.rsample(batch.state)
         q1, q2 = self.critic(batch.state, new_action)
