@@ -19,12 +19,16 @@ class SAC(BaseRL, OffPolicy):
         self.steps = 0
 
     def act(self, state, deterministic=False):
+        t1 = time.time()
         action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic)
         next_state, reward, done, _ = self.env.step(action.cpu().numpy())
         if done:
             next_state = self.env.reset() 
         self._memory.push(state, action, reward, next_state, done)
         self.steps += 1
+        t2 = time.time()
+        print("Step: {:.3f}s".format((t2-t1)))
+        print("------------------------------------")
         return next_state, reward, done
 
     @OffPolicy.loop
@@ -58,6 +62,6 @@ class SAC(BaseRL, OffPolicy):
         #     metrics['value'] = torch.min(q1,q2).mean().item()
         metrics['entropy'] = self.actor.entropy(batch.state).sum().item()
         t2 = time.time()
-        print("Time Elapsed since last progress Update: {:.3f}s".format((t2-t1)))
+        print("Update: {:.3f}s".format((t2-t1)))
         print("------------------------------------")
         return metrics
