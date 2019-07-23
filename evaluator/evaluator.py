@@ -94,6 +94,7 @@ class Evaluator():
                 self._print_progress()
                 t2 = time.time()
                 print("Time Elapsed since last progress Update: {:.3f}s".format((t2-t1)))
+                print("------------------------------------")
                 t1 = deepcopy(t2)
 
     def _step(self, state):
