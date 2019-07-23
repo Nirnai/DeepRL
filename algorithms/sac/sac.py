@@ -33,9 +33,8 @@ class SAC(BaseRL, OffPolicy):
 
     @OffPolicy.loop
     def learn(self):
-        t1 = time.time()
         batch = self.offPolicyData
-
+        t1 = time.time()
         # Update Critic
         q1, q2 = self.critic(batch.state, batch.action)
         new_action_next, log_prob_next = self.actor.rsample(batch.next_state)
