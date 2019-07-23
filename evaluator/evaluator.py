@@ -79,6 +79,7 @@ class Evaluator():
 
     def _train(self, eval_mode='online'):
         done = True
+        t1 = time.time()
         for t in range(self._total_timesteps):
             if done:
                 state = self.alg.env.reset()
@@ -89,6 +90,11 @@ class Evaluator():
                 self._eval_offline()
             else: 
                 NotImplementedError
+            if done and self._curr_episode % self._log_interval == 0:
+                self._print_progress()
+                t2 = time.time()
+                print("Time Elapsed since last progress Update: {:.3f}s".format((t2-t1)))
+                t1 = deepcopy(t2)
 
     def _step(self, state):
         # Act
