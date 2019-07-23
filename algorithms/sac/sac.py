@@ -29,6 +29,7 @@ class SAC(BaseRL, OffPolicy):
 
     @OffPolicy.loop
     def learn(self):
+        t1 = time.time()
         batch = self.offPolicyData
 
         # Update Critic
@@ -56,4 +57,7 @@ class SAC(BaseRL, OffPolicy):
         #     q1, q2 = self.critic(next_state, next_action)
         #     metrics['value'] = torch.min(q1,q2).mean().item()
         metrics['entropy'] = self.actor.entropy(batch.state).sum().item()
+        t2 = time.time()
+        print("Time Elapsed since last progress Update: {:.3f}s".format((t2-t1)))
+        print("------------------------------------")
         return metrics
