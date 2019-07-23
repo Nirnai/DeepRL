@@ -19,16 +19,12 @@ class SAC(BaseRL, OffPolicy):
         self.steps = 0
 
     def act(self, state, deterministic=False):
-        t1 = time.time()
         action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic)
         next_state, reward, done, _ = self.env.step(action.cpu().numpy())
         if done:
             next_state = self.env.reset() 
         self._memory.push(state, action, reward, next_state, done)
         self.steps += 1
-        t2 = time.time()
-        print("Step: {:.3f}ms".format((t2-t1)*1000))
-        print("------------------------------------")
         return next_state, reward, done
 
     @OffPolicy.loop
