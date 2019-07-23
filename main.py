@@ -9,7 +9,7 @@ try:
 except ImportError:
     pass
 import torch
-from algorithms import VPG, A2C, PPO, TRPO, SAC, CGP, TD3
+from algorithms import PPO, TRPO, SAC, CGP, TD3
 from evaluator import Evaluator, plot_dataset
 
 # from evaluation import Evaluation
