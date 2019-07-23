@@ -1,6 +1,5 @@
-import os
-import inspect
 import numpy
+import time
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
@@ -49,12 +48,12 @@ class SAC(BaseRL, OffPolicy):
         
         # Return Metrics
         metrics = dict()
-        data = self._memory.replay()
-        terminals = (1-data.mask).type(torch.BoolTensor)
-        next_state = data.next_state[terminals]
-        if len(next_state) > 0:
-            next_action = self.actor(next_state)
-            q1, q2 = self.critic(next_state, next_action)
-            metrics['value'] = torch.min(q1,q2).mean().item()
+        # data = self._memory.replay()
+        # terminals = (1-data.mask).type(torch.BoolTensor)
+        # next_state = data.next_state[terminals]
+        # if len(next_state) > 0:
+        #     next_action = self.actor(next_state)
+        #     q1, q2 = self.critic(next_state, next_action)
+        #     metrics['value'] = torch.min(q1,q2).mean().item()
         metrics['entropy'] = self.actor.entropy(batch.state).sum().item()
         return metrics

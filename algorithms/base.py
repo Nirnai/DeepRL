@@ -1,3 +1,4 @@
+import time
 import os
 import inspect
 import random
@@ -9,7 +10,6 @@ from algorithms import HyperParameter
 from utils.env import getEnvInfo
 from utils.values_functions import Value, QValue
 from utils.memory import Memory
-
 
 class BaseRL(metaclass=ABCMeta):
     def __init__(self, env, **kw):
@@ -43,6 +43,16 @@ class BaseRL(metaclass=ABCMeta):
     def reset(self):
         self.__init__(self.env)
 
+
+def timing(f):
+    def wrap(*args):
+        t1 = time.time()
+        ret = f(*args)
+        t2 = time.time()
+        print("Time Elapsed since last progress Update: {:.3f}s".format((t2-t1)))
+        print("------------------------------------")
+        return ret
+    return wrap
 
 class OnPolicy():
     def __init__(self, param, *args, **kw):
