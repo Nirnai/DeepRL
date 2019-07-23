@@ -9,6 +9,7 @@ class CGP(BaseRL, OffPolicy):
     def __init__(self, env):
         super(CGP, self).__init__(env)
         self.name = "CGP"
+        
         self.Q = QModel(self.param)
         self.policy = CrossEntropyGuidedPolicy( self.Q, 
                                                 self._action_dim,

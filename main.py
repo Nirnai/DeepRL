@@ -26,29 +26,29 @@ if __name__ == '__main__':
 
 
     ########## Algorithm ###########
-    alg = TRPO(env)
+    # alg = TRPO(env)
     # alg = PPO(env)
-    # alg = SAC(env)
+    alg = SAC(env)
     # alg = CGP(env)
     # alg = TD3(env)
 
     # ########### Evaluation ###########
     evl = Evaluator(alg, total_timesteps=1e6)
-    # evl.evaluate('data')
+    evl.evaluate('data')
     # ##################################
 
 
     ########## One Learning Loop #########
-    env.render()
-    state = env.reset()
-    for t in range(int(1e6)):
-        # Act
-        state, reward, done = alg.act(state)
-        # Train
-        metrics = alg.learn()
-        # Log
-        evl._log_metrics(metrics)
-        evl._eval_online(reward, done)
+    # env.render()
+    # state = env.reset()
+    # for t in range(int(1e6)):
+    #     # Act
+    #     state, reward, done = alg.act(state)
+    #     # Train
+    #     metrics = alg.learn()
+    #     # Log
+    #     evl._log_metrics(metrics)
+    #     evl._eval_online(reward, done)
     ########## One Learning Loop #########
 
 

@@ -11,7 +11,6 @@ class TD3(BaseRL, OffPolicy):
     def __init__(self, env):
         super(TD3, self).__init__(env)
         self.name = "TD3"
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.critic = QModel(self.param)
         self.actor = DeterministicPolicy(self.param.ARCHITECTURE, 

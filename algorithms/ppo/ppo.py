@@ -7,7 +7,6 @@ class PPO(BaseRL, OnPolicy):
     def __init__(self, env):
         super(PPO, self).__init__(env)
         self.name = 'PPO'
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.critic = VModel(self.param)
         self.actor = GaussianPolicy( self.param.ARCHITECTURE,

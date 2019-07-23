@@ -1,9 +1,18 @@
 import os
+import time
 import numpy as np
-# import pandas as pd
 from copy import deepcopy
 from itertools import count
 # from plot import plot_dataset
+
+def timing(f):
+    def wrap(*args):
+        time1 = time.time()
+        ret = f(*args)
+        time2 = time.time()
+        print('{:s} function took {:.3f} ms'.format(f.__name__, (time2-time1)*1000.0))
+        return ret
+    return wrap
 
 
 class Evaluator():
@@ -95,8 +104,8 @@ class Evaluator():
         self._log_reward(reward, done)
         if done:
             self._average_returns.append(np.mean(self._returns[-self._window:-1]))
-            if self._curr_episode % self._log_interval == 0:
-                self._print_progress()
+            # if self._curr_episode % self._log_interval == 0:
+            #     self._print_progress()
 
     def _eval_offline(self):
         if self.alg.steps % self._eval_timesteps == 0:
@@ -107,7 +116,7 @@ class Evaluator():
                 self._log_reward(reward, done)
                 if(self._curr_episode == self._window):
                     self._average_returns.append(np.mean(self._returns))
-                    self._print_progress()
+                    # self._print_progress()
                     self._returns = [0.0]
                     self._curr_episode = 0
                     break

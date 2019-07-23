@@ -13,6 +13,8 @@ from utils.memory import Memory
 
 class BaseRL(metaclass=ABCMeta):
     def __init__(self, env, **kw):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print("Trainin on Device: {}".format(self.device))
         self.env = env
         self._rng = random.Random()
         self._state_dim, self._action_dim, self._action_space = getEnvInfo(env)

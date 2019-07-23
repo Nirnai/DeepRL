@@ -12,7 +12,6 @@ class SAC(BaseRL, OffPolicy):
     def __init__(self, env):
         super(SAC, self).__init__(env)
         self.name = 'SAC'
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.critic = QModel(self.param)
         self.actor = BoundedGaussianPolicy(self.param.ARCHITECTURE, 
