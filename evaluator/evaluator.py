@@ -32,6 +32,7 @@ class Evaluator():
         self._returns = [0.0]
         self._average_returns = []
         self._metrics = dict()
+        self._actions = []
         # Checks
         self._solved = False
 
@@ -48,6 +49,7 @@ class Evaluator():
             self.reset()
             self._train(eval_mode=mode)
             self.save_returns(output_filename)
+            self.save_actions(output_filename)
             self.save_metrics(output_filename)
 
     def save_returns(self, path):
@@ -67,12 +69,21 @@ class Evaluator():
                 samples = [array for array in np.load(filename).values()]
             samples.append(values)
             np.savez(filename[:-4], *samples)
+    
+    def save_actions(self, path):
+        actions_file = '{}_actions.npz'.format(path)
+        samples = []
+        if os.path.isfile(actions_file):
+            samples = [array for array in np.load(actions_file).values()]
+        samples.append(self._actions)
+        np.savez(actions_file[:-4], *samples)
 
     def reset(self):
         self._curr_episode = 0
         self._returns = [0.0]
         self._average_returns = []
         self._metrics = dict()
+        self._actions = []
         self._solved = False
         self.alg.reset()
 
@@ -104,6 +115,8 @@ class Evaluator():
         metrics = self.alg.learn()
         # Collect Metrics
         self._log_metrics(metrics)
+        # Collect Actions
+        # self._log_action(action)
 
         return state, reward, done
 
@@ -144,12 +157,17 @@ class Evaluator():
                         self._metrics[key].append(value)
                     else:
                         self._metrics[key] = [value]
+    
+    def _log_action(self, action):
+        self._actions.append(action)
+
 
 
     def _print_progress(self):
         print("Steps: {:,}".format(self.alg.steps))
-        print("Average Reward: {:.2f}".format(self._average_returns[-1]))
-        print("Goal Average Reward: {}".format(self._desired_average_return))
+        print("Episode: {:.2f}".format(self._curr_episode))
+        print("Average Return: {:.2f}".format(self._average_returns[-1]))
+        print("Goal Average Return: {}".format(self._desired_average_return))
         for key, value in self._metrics.items():
             print("{}: {:.2f}".format(key, self._metrics[key][-1]))
         print("------------------------------------")

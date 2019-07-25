@@ -44,3 +44,26 @@
 # p2 = dist.MultivariateNormal(mean, std)
 
 # print(p2.sample())
+
+# import gym
+# import pybulletgym.envs 
+
+# env = gym.make("HumanoidPyBulletEnv-v0")
+# env.render()
+# env.reset()
+
+# for _ in range(10000):
+#     env.step(env.action_space.sample()) # take a random action
+# env.close()
+
+import time
+import gym
+import pybulletgym
+
+env = gym.make('InvertedPendulumPyBulletEnv-v0')
+env.render()
+env.reset()
+while True:
+    time.sleep(0.01)
+    env.step(env.action_space.sample())
+    
