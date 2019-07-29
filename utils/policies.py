@@ -34,6 +34,7 @@ def unwrap_layers(model):
 class GaussianPolicy(nn.Module):
     def __init__(self, architecture, activation, learning_rate):
         super(GaussianPolicy, self).__init__()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         activation = getattr(nn.modules.activation, activation)()
         layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
         hidden_layers = nn.Sequential(*layers)
@@ -41,6 +42,7 @@ class GaussianPolicy(nn.Module):
         self._mean = unwrap_layers(nn.Sequential(hidden_layers, output_layer))
         self._log_std = nn.Parameter(torch.ones(architecture[-1]))
         self._optim = optim.Adam(self.parameters(), lr=learning_rate)
+        self.to(self.device)
 
     def forward(self, state, deterministic=False):
         if deterministic:
@@ -96,10 +98,12 @@ class BoundedGaussianPolicy(GaussianPolicy):
 class DeterministicPolicy(nn.Module):
     def __init__(self, architecture, activation, learning_rate):
         super(DeterministicPolicy, self).__init__()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         activation = getattr(nn.modules.activation, activation)()
         layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:])]
         self._action = unwrap_layers(nn.Sequential(*layers))
         self._optim = optim.Adam(self.parameters(), lr=learning_rate)
+        self.to(self.device)
     
     def forward(self, state):
         return self._action(state)

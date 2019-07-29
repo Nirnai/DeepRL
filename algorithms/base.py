@@ -17,12 +17,8 @@ from utils.memory import Memory
 class BaseRL(metaclass=ABCMeta):
     def __init__(self, env, **kw):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print("Trainin on Device: {}".format(self.device))
         self.env = env
-        
         self._rng = random.Random()
-        # self._rng = np.random.RandomState(0) 
-
         self._state_dim, self._action_dim, self._action_space = getEnvInfo(env)
         self.param = self.load_parameters()
         if(hasattr(self.param, 'ARCHITECTURE')):
@@ -99,11 +95,10 @@ class OffPolicy():
 
 class QModel():
     def __init__(self, param):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.Q1 = QValue(param.ARCHITECTURE, param.ACTIVATION).to(self.device)
-        self.Q2 = QValue(param.ARCHITECTURE, param.ACTIVATION).to(self.device)
-        self.Q1_target = QValue(param.ARCHITECTURE, param.ACTIVATION).to(self.device)
-        self.Q2_target = QValue(param.ARCHITECTURE, param.ACTIVATION).to(self.device)
+        self.Q1 = QValue(param.ARCHITECTURE, param.ACTIVATION)
+        self.Q2 = QValue(param.ARCHITECTURE, param.ACTIVATION)
+        self.Q1_target = QValue(param.ARCHITECTURE, param.ACTIVATION)
+        self.Q2_target = QValue(param.ARCHITECTURE, param.ACTIVATION)
         self.Q1_target.load_state_dict(self.Q1.state_dict())
         self.Q2_target.load_state_dict(self.Q1.state_dict())
         self.Q1_target.eval()
@@ -131,8 +126,7 @@ class QModel():
 
 class VModel():   
     def __init__(self, param):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.V = Value(param.ARCHITECTURE, param.ACTIVATION).to(self.device)
+        self.V = Value(param.ARCHITECTURE, param.ACTIVATION)
         self.V_optim = optim.Adam(self.V.parameters(), lr=param.CRITIC_LEARNING_RATE)
     
     def __call__(self, state):

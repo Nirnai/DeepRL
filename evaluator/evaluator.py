@@ -91,8 +91,6 @@ class Evaluator():
     def _train(self, eval_mode='online'):
         done = True
         avarage_time = 0
-        t1 = time.time()
-        avarage_time = 0
         for t in range(self._total_timesteps):
             if done:
                 state = self.alg.env.reset()

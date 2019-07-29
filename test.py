@@ -67,3 +67,7 @@ while True:
     time.sleep(0.01)
     env.step(env.action_space.sample())
     
+
+## Structured array for replay buffer
+
+transition = np.array([], dtype=[('state', (np.float64), ('action', (np.float64, 1)])
