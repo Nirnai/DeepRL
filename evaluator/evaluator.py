@@ -90,11 +90,16 @@ class Evaluator():
 
     def _train(self, eval_mode='online'):
         done = True
+        avarage_time = 0
         t1 = time.time()
+        avarage_time = 0
         for t in range(self._total_timesteps):
             if done:
                 state = self.alg.env.reset()
+            t1 = time.time()
             state, reward, done = self._step(state)
+            t2 = time.time()
+            avarage_time += (t2 - t1)
             if eval_mode is 'online':
                 self._eval_online(reward, done)
             elif eval_mode is 'offline':
@@ -103,20 +108,27 @@ class Evaluator():
                 NotImplementedError
             if done and self._curr_episode % self._log_interval == 0:
                 self._print_progress()
-                t2 = time.time()
-                print("Time Elapsed since last progress Update: {:.3f}s".format((t2-t1)))
+                print("Total: {:.3f}ms".format(avarage_time * 1000 / (t+1)))
                 print("------------------------------------")
-                t1 = deepcopy(t2)
 
     def _step(self, state):
+        # t1 = time.time()
         # Act
         state, reward, done = self.alg.act(state)
+        # t2 = time.time()
         # Learn
         metrics = self.alg.learn()
+        # t3 = time.time()
         # Collect Metrics
-        self._log_metrics(metrics)
-        # Collect Actions
-        # self._log_action(action)
+        # self._log_metrics(metrics)
+
+        # if done and self._curr_episode % self._log_interval == 0:
+        #     print("Time Act: {:.3f}ms".format((t2-t1)*1000))
+        #     print("Time Learn: {:.3f}ms".format((t3-t2)*1000))
+        #     print("Total: {:.3f}ms".format((t3-t1)*1000))
+        #     print("------------------------------------")
+        #     t1 = deepcopy(t2)
+
 
         return state, reward, done
 

@@ -88,7 +88,8 @@ class BoundedGaussianPolicy(GaussianPolicy):
     def rsample(self, state):
         policy = self.policy(state)
         action = policy.rsample()
-        log_prob = self.log_prob(state, action)
+        log_prob = (policy.log_prob(action) - torch.log1p(-torch.tanh(action).pow(2) + 1e-6)).sum(dim=-1)
+        # log_prob = self.log_prob(state, action)
         return torch.tanh(action), log_prob
 
 

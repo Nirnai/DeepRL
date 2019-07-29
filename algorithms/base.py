@@ -1,7 +1,10 @@
 import time
 import os
 import inspect
+
 import random
+# import numpy as np
+
 import torch
 import torch.optim as optim
 from abc import ABCMeta, abstractmethod
@@ -16,7 +19,10 @@ class BaseRL(metaclass=ABCMeta):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print("Trainin on Device: {}".format(self.device))
         self.env = env
+        
         self._rng = random.Random()
+        # self._rng = np.random.RandomState(0) 
+
         self._state_dim, self._action_dim, self._action_space = getEnvInfo(env)
         self.param = self.load_parameters()
         if(hasattr(self.param, 'ARCHITECTURE')):
@@ -44,15 +50,15 @@ class BaseRL(metaclass=ABCMeta):
         self.__init__(self.env)
 
 
-def timing(f):
-    def wrap(*args):
-        t1 = time.time()
-        ret = f(*args)
-        t2 = time.time()
-        print("Time Elapsed since last progress Update: {:.3f}s".format((t2-t1)))
-        print("------------------------------------")
-        return ret
-    return wrap
+# def timing(f):
+#     def wrap(*args):
+#         t1 = time.time()
+#         ret = f(*args)
+#         t2 = time.time()
+#         print("Time Elapsed since last progress Update: {:.3f}s".format((t2-t1)))
+#         print("------------------------------------")
+#         return ret
+#     return wrap
 
 class OnPolicy():
     def __init__(self, param, *args, **kw):
@@ -77,14 +83,15 @@ class OffPolicy():
         self._rng = rng
         self._memory = Memory(param.MEMORY_SIZE, rng)
         self._batch_size = param.BATCH_SIZE
+        self._update_steps = param.UPDATE_STEPS
         super(OffPolicy, self).__init__(**kw)
 
     @classmethod
     def loop(cls, f):
         def wrap(self, *args):
             metrics = None
-            if len(self._memory) >= self._batch_size:
-                self.offPolicyData = self._memory.sample(self._batch_size)
+            if len(self._memory) >= self._batch_size * self._update_steps:
+                self.offPolicyData = self._memory.sample(self._batch_size * self._update_steps)
                 metrics = f(self)
             return metrics
         return wrap
