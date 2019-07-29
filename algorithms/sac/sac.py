@@ -54,5 +54,5 @@ class SAC(BaseRL, OffPolicy):
         #     next_action = self.actor(next_state)
         #     q1, q2 = self.critic(next_state, next_action)
         #     metrics['value'] = torch.min(q1,q2).mean().item()
-        metrics['entropy'] = self.actor.entropy(batch.state).sum().item()
+        # metrics['entropy'] = self.actor.entropy(batch.state).sum().item()
         return metrics

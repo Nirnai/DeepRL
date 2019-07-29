@@ -18,11 +18,11 @@ if __name__ == '__main__':
 
     ########## Environment ###########
     # env = gym.make('CartPole-v1')
-    # env = gym.make('Pendulum-v0')
+    env = gym.make('Pendulum-v0')
     # env = gym.make('InvertedPendulum-v2')
     # env = gym.make('HalfCheetah-v2')
     # env = gym.make('InvertedPendulumPyBulletEnv-v0')
-    env = gym.make('InvertedPendulumSwingupPyBulletEnv-v0')
+    # env = gym.make('InvertedPendulumSwingupPyBulletEnv-v0')
 
 
     ########## Algorithm ###########
