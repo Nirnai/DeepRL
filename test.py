@@ -56,18 +56,25 @@
 #     env.step(env.action_space.sample()) # take a random action
 # env.close()
 
-import time
-import gym
-import pybulletgym
+# import time
+# import gym
+# import pybulletgym
 
-env = gym.make('InvertedPendulumPyBulletEnv-v0')
-env.render()
-env.reset()
-while True:
-    time.sleep(0.01)
-    env.step(env.action_space.sample())
+# env = gym.make('InvertedPendulumPyBulletEnv-v0')
+# env.render()
+# env.reset()
+# while True:
+#     time.sleep(0.01)
+#     env.step(env.action_space.sample())
     
 
 ## Structured array for replay buffer
 
-transition = np.array([], dtype=[('state', (np.float64), ('action', (np.float64, 1)])
+import numpy as np
+transition_type = np.dtype([ ('state', np.float64, (3,1)), ('action', np.float64, (1,1))])
+
+print(transition_type)
+
+transitions = np.zeros(4, dtype = transition_type)
+print(transitions)
+# transition = np.array([], dtype=[('state', (np.float64), ('action', (np.float64, 1)])

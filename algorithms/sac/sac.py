@@ -30,20 +30,20 @@ class SAC(BaseRL, OffPolicy):
     @OffPolicy.loop
     def learn(self):
         batch = self.offPolicyData
-        # # Update Critic
-        # q1, q2 = self.critic(batch.state, batch.action)
-        # with torch.no_grad():
-        #     new_action_next, log_prob_next = self.actor.rsample(batch.next_state)
-        #     q1_next, q2_next = self.critic.target(batch.next_state, new_action_next)
-        #     q_target = batch.reward + self.param.GAMMA * batch.mask * torch.min(q1_next, q2_next) - self.param.ALPHA * log_prob_next
-        # critic_loss = F.mse_loss(q1, q_target) + F.mse_loss(q2, q_target)
-        # self.critic.optimize(critic_loss)
+        # Update Critic
+        q1, q2 = self.critic(batch.state, batch.action)
+        with torch.no_grad():
+            new_action_next, log_prob_next = self.actor.rsample(batch.next_state)
+            q1_next, q2_next = self.critic.target(batch.next_state, new_action_next)
+            q_target = batch.reward + self.param.GAMMA * batch.mask * torch.min(q1_next, q2_next) - self.param.ALPHA * log_prob_next
+        critic_loss = F.mse_loss(q1, q_target) + F.mse_loss(q2, q_target)
+        self.critic.optimize(critic_loss)
 
-        # # Update Actor
-        # new_action, log_prob = self.actor.rsample(batch.state)
-        # q1, q2 = self.critic(batch.state, new_action)
-        # actor_loss = (self.param.ALPHA * log_prob - torch.min(q1,q2)).mean()
-        # self.actor.optimize(actor_loss)
+        # Update Actor
+        new_action, log_prob = self.actor.rsample(batch.state)
+        q1, q2 = self.critic(batch.state, new_action)
+        actor_loss = (self.param.ALPHA * log_prob - torch.min(q1,q2)).mean()
+        self.actor.optimize(actor_loss)
         
         # Return Metrics
         metrics = dict()

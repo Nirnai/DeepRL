@@ -8,9 +8,9 @@
     ],
     "LEARNING_RATE": 1e-3,
     "SEED" : null,
-    "MEMORY_SIZE": 1e5,
+    "MEMORY_SIZE": 1e6,
     "BATCH_SIZE": 64,
-    "UPDATE_STEPS": 1,
+    "UPDATE_STEPS": 4,
     "GAMMA" : 0.99,
     "TAU": 0.005, 
     "ALPHA": 0.2

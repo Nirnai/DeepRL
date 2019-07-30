@@ -5,16 +5,6 @@ from copy import deepcopy
 from itertools import count
 # from plot import plot_dataset
 
-def timing(f):
-    def wrap(*args):
-        time1 = time.time()
-        ret = f(*args)
-        time2 = time.time()
-        print('{:s} function took {:.3f} ms'.format(f.__name__, (time2-time1)*1000.0))
-        return ret
-    return wrap
-
-
 class Evaluator():
     def __init__(self, algorithm, total_timesteps=1e6, eval_timesteps=1000, averaging_window=20):
         self.alg = algorithm
@@ -126,9 +116,8 @@ class Evaluator():
         #     print("Total: {:.3f}ms".format((t3-t1)*1000))
         #     print("------------------------------------")
         #     t1 = deepcopy(t2)
-
-
         return state, reward, done
+            
 
     def _eval_online(self, reward, done):
         self._log_reward(reward, done)

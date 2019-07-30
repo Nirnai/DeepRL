@@ -2,8 +2,8 @@ import time
 import os
 import inspect
 
-import random
-# import numpy as np
+# import random
+import numpy as np
 
 import torch
 import torch.optim as optim
@@ -18,13 +18,14 @@ class BaseRL(metaclass=ABCMeta):
     def __init__(self, env, **kw):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.env = env
-        self._rng = random.Random()
+        # self._rng = random.Random()
+        self._rng = np.random.RandomState(0)
         self._state_dim, self._action_dim, self._action_space = getEnvInfo(env)
         self.param = self.load_parameters()
         if(hasattr(self.param, 'ARCHITECTURE')):
             self.param.ARCHITECTURE[ 0] = self._state_dim
             self.param.ARCHITECTURE[-1] = self._action_dim
-        super(BaseRL, self).__init__(self.param, self._rng)
+        super(BaseRL, self).__init__(self.param, self._rng, self.env)
 
     @abstractmethod
     def act(self):
@@ -40,21 +41,10 @@ class BaseRL(metaclass=ABCMeta):
 
     def seed(self, seed):
         torch.manual_seed(seed)
-        self._rng = random.Random(seed)
+        self._rng.seed(seed)
 
     def reset(self):
         self.__init__(self.env)
-
-
-# def timing(f):
-#     def wrap(*args):
-#         t1 = time.time()
-#         ret = f(*args)
-#         t2 = time.time()
-#         print("Time Elapsed since last progress Update: {:.3f}s".format((t2-t1)))
-#         print("------------------------------------")
-#         return ret
-#     return wrap
 
 class OnPolicy():
     def __init__(self, param, *args, **kw):
@@ -75,9 +65,9 @@ class OnPolicy():
 
 
 class OffPolicy():
-    def __init__(self, param, rng, **kw):
+    def __init__(self, param, rng, env, **kw):
         self._rng = rng
-        self._memory = Memory(param.MEMORY_SIZE, rng)
+        self._memory = Memory(param.MEMORY_SIZE, rng, env)
         self._batch_size = param.BATCH_SIZE
         self._update_steps = param.UPDATE_STEPS
         super(OffPolicy, self).__init__(**kw)
@@ -86,7 +76,7 @@ class OffPolicy():
     def loop(cls, f):
         def wrap(self, *args):
             metrics = None
-            if len(self._memory) >= self._batch_size * self._update_steps:
+            if len(self._memory) >= self._batch_size * self._update_steps and self.steps % self._update_steps == 0:
                 self.offPolicyData = self._memory.sample(self._batch_size * self._update_steps)
                 metrics = f(self)
             return metrics
