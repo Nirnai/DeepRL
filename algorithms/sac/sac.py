@@ -25,7 +25,7 @@ class SAC(BaseRL, OffPolicy):
             next_state = self.env.reset() 
         self._memory.push(state, action, reward, next_state, done)
         self.steps += 1
-        return next_state, reward, done
+        return state, reward, done
 
     @OffPolicy.loop
     def learn(self):

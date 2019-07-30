@@ -70,11 +70,30 @@
 
 ## Structured array for replay buffer
 
-import numpy as np
-transition_type = np.dtype([ ('state', np.float64, (3,1)), ('action', np.float64, (1,1))])
+import gym
+import torch
+import torch.multiprocessing as mp
+from algorithms import SAC
 
-print(transition_type)
+def play(env, q):
+    alg = SAC(env)
+    state = env.reset()
+    for i in range(10):
+        (state, action, reward, next_state, done) = alg.act(state)
+        print("Experiance: {}".format((state, action, reward, next_state, done)))
+        q.put((state, action, reward, next_state, done))  
+        state = next_state
 
-transitions = np.zeros(4, dtype = transition_type)
-print(transitions)
-# transition = np.array([], dtype=[('state', (np.float64), ('action', (np.float64, 1)])
+if __name__ == "__main__":
+    mp.set_start_method('spawn')
+    env = gym.make('Pendulum-v0')
+    
+    q = mp.Queue(maxsize=10)  
+    p = mp.Process(target=play, args=(env,q))
+    p.start()
+    while p.is_alive():
+        print("Test")
+        exp = q.get()
+        if exp is None:
+            p.join()
+            break

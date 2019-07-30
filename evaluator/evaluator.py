@@ -1,6 +1,7 @@
 import os
 import time
 import numpy as np
+import torch.multiprocessing as mp
 from copy import deepcopy
 from itertools import count
 # from plot import plot_dataset
@@ -76,7 +77,6 @@ class Evaluator():
         self._actions = []
         self._solved = False
         self.alg.reset()
-
 
     def _train(self, eval_mode='online'):
         done = True
