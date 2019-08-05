@@ -1,5 +1,5 @@
 import torch
-from algorithms import BaseRL, OnPolicy, VModel
+from algorithms import BaseRL, OnPolicy, ValueFunction
 from utils.policies import GaussianPolicy
 from copy import deepcopy
 
@@ -7,20 +7,18 @@ class PPO(BaseRL, OnPolicy):
     def __init__(self, env):
         super(PPO, self).__init__(env)
         self.name = 'PPO'
-
-        self.critic = VModel(self.param)
-        self.actor = GaussianPolicy( self.param.ARCHITECTURE,
-                                     self.param.ACTIVATION,
-                                     self.param.ACTOR_LEARNING_RATE).to(self.device)
+        self.critic = ValueFunction(self.param.value , self.device)
+        self.actor = GaussianPolicy(self.param.policy, self.device)
         self.steps = 0
 
+
     def act(self, state, deterministic=False):
-        action = self.actor(torch.from_numpy(state).float().to(self.device))
-        next_state, reward, done, _ = self.env.step(action.cpu().numpy())
-        self._memory.push(state, action, reward, next_state, done) 
-        self.steps += 1
+        action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy()
+        next_state, reward, done, _ = self.env.step(action)
         if done:
             next_state = self.env.reset()
+        self.memory.push(state, action, reward, next_state, done) 
+        self.steps += 1
         return next_state, reward, done
     
     @OnPolicy.loop
@@ -41,32 +39,6 @@ class PPO(BaseRL, OnPolicy):
         metrics['value loss'] = critic_loss.item()
         metrics['policy entropy'] = self.actor.entropy(rollouts.state).sum().item()
         return metrics
-
-# class PPO(ActorCritic):
-#     def __init__(self, env):
-#         super(PPO, self).__init__(env)
-#         self.name = "PPO"
-        
-
-#     @onPolicy
-#     def learn(self):
-#         rollouts = self.onPolicyData
-#         self.actor_old = deepcopy(self.actor)
-#         for _ in range(self.param.EPOCHS):
-#             # Compute Advantages
-#             advantages = self.gae(rollouts)
-#             # Critic Step
-#             critic_loss = advantages.pow(2).mean()
-#             self.optimize_critic(critic_loss)
-#             # Actor Step
-#             actor_loss = self.clipped_objective(rollouts, advantages)
-#             self.optimize_actor(actor_loss)
-
-#         metrics = dict()
-#         metrics['value loss'] = critic_loss.item()
-#         metrics['policy entropy'] = self.actor.entropy(rollouts.state).sum().item()
-#         return metrics
-
 
     ################################################################
     ########################## Utilities ###########################

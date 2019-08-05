@@ -33,9 +33,9 @@ class Evaluator():
             os.mkdir(output)
         output_filename = "{}/{}_{}".format(output, self._alg_name, self._env_name)
         seeds = []
-        np.random.seed(seed)
+        rng = np.random.RandomState(seed) #np.random.seed(seed)
         for i in range(samples):
-            seeds.append(np.random.randint(0,100))
+            seeds.append(rng.randint(0,100))
             self._seed(seeds[i])
             self.reset()
             self._train(eval_mode=mode)

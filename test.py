@@ -97,3 +97,7 @@ if __name__ == "__main__":
         if exp is None:
             p.join()
             break
+
+from evaluator.plot import plot_dataset
+data = 'data/SAC_Pendulum-v0_returns.npz'
+plot_dataset(data)

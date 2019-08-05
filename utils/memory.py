@@ -4,14 +4,12 @@ from collections import deque, namedtuple
 
 
 class Memory():
-    def __init__(self, capacity, rng, env):
+    def __init__(self, capacity, rng, env, device):
         self._rng = rng
-        self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self._device = device
         self._max_size = int(capacity)
+
         self._transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'mask'))
-        
-        # self._buffer = []
-        
         self._transition_type = [('state', np.float64, env.observation_space.shape), 
                                  ('action', np.float64, env.action_space.shape),
                                  ('reward', np.float64),
@@ -19,9 +17,7 @@ class Memory():
                                  ('mask', np.int64)]
         self._buffer = np.zeros(self._max_size, dtype = self._transition_type)
         self._len = 0
-
         self._next_idx = 0
-        
         
     
     def __len__(self):
@@ -58,22 +54,13 @@ class Memory():
         reward = torch.from_numpy(transitions['reward']).float().to(self._device)
         next_state = torch.from_numpy(transitions['next_state']).float().to(self._device)
         mask = torch.from_numpy(transitions['mask']).float().to(self._device)
-
-        # idxs = np.random.randint(0, len(self), batch_size)
-        # transitions = self._transition(*zip(*[self._buffer[idx] for idx in idxs]))
-        # state = torch.from_numpy(np.array(transitions.state)).to(self._device)
-        # action = torch.from_numpy(np.array(transitions.action)).to(self._device)
-        # reward = torch.from_numpy(np.array(transitions.reward)).to(self._device)
-        # next_state = torch.from_numpy(np.array(transitions.next_state)).to(self._device)
-        # mask = torch.from_numpy(np.array(transitions.mask)).to(self._device)
-
         return self._transition(state, action, reward, next_state, mask)
 
     def replay(self):
-        transitions = self._transition(*zip(*self._buffer))
-        state = torch.Tensor(transitions.state).to(self._device, non_blocking=True)
-        action = torch.stack(transitions.action).to(self._device, non_blocking=True)
-        reward = torch.Tensor(transitions.reward).to(self._device, non_blocking=True)
-        next_state = torch.Tensor(transitions.next_state).to(self._device, non_blocking=True)
-        mask = torch.Tensor(transitions.mask).to(self._device, non_blocking=True)
+        transitions = self._buffer[:]
+        state = torch.from_numpy(transitions['state']).float().to(self._device) 
+        action = torch.from_numpy(transitions['action']).float().to(self._device)
+        reward = torch.from_numpy(transitions['reward']).float().to(self._device)
+        next_state = torch.from_numpy(transitions['next_state']).float().to(self._device)
+        mask = torch.from_numpy(transitions['mask']).float().to(self._device)
         return self._transition(state, action, reward, next_state, mask)

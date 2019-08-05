@@ -4,28 +4,26 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 from copy import deepcopy
-from algorithms import BaseRL, HyperParameter, OffPolicy, QModel
+from algorithms import BaseRL, HyperParameter, OffPolicy, ActionValueFunction
 from utils.policies import BoundedGaussianPolicy
 
 class SAC(BaseRL, OffPolicy):
     def __init__(self, env):
         super(SAC, self).__init__(env)
         self.name = 'SAC'
-
-        self.critic = QModel(self.param)
-        self.actor = BoundedGaussianPolicy(self.param.ARCHITECTURE, 
-                                           self.param.ACTIVATION, 
-                                           self.param.LEARNING_RATE)
+        self.critic = ActionValueFunction(self.param.qvalue, self.device)
+        self.actor = BoundedGaussianPolicy(self.param.policy, self.device)
         self.steps = 0
+
 
     def act(self, state, deterministic=False):
         action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy()
         next_state, reward, done, _ = self.env.step(action)
         if done:
             next_state = self.env.reset() 
-        self._memory.push(state, action, reward, next_state, done)
+        self.memory.push(state, action, reward, next_state, done)
         self.steps += 1
-        return state, reward, done
+        return next_state, reward, done
 
     @OffPolicy.loop
     def learn(self):
@@ -40,7 +38,7 @@ class SAC(BaseRL, OffPolicy):
         self.critic.optimize(critic_loss)
 
         # Update Actor
-        new_action, log_prob = self.actor.rsample(batch.state)
+        new_action, log_prob = self.actor.rsample(batch.state)  
         q1, q2 = self.critic(batch.state, new_action)
         actor_loss = (self.param.ALPHA * log_prob - torch.min(q1,q2)).mean()
         self.actor.optimize(actor_loss)
