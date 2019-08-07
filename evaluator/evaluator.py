@@ -90,16 +90,10 @@ class Evaluator():
 
     def _train(self, eval_mode='online'):
         done = True
-        avarage_time = 0
-        t1 = time.time()
-        avarage_time = 0
         for t in range(self._total_timesteps):
             if done:
                 state = self.alg.env.reset()
-            t1 = time.time()
             state, reward, done = self._step(state)
-            t2 = time.time()
-            avarage_time += (t2 - t1)
             if eval_mode is 'online':
                 self._eval_online(reward, done)
             elif eval_mode is 'offline':
@@ -108,36 +102,23 @@ class Evaluator():
                 NotImplementedError
             if done and self._curr_episode % self._log_interval == 0:
                 self._print_progress()
-                print("Total: {:.3f}ms".format(avarage_time * 1000 / (t+1)))
-                print("------------------------------------")
+                # print("Total: {:.3f}ms".format(avarage_time * 1000 / (t+1)))
+                # print("------------------------------------")
 
     def _step(self, state):
-        # t1 = time.time()
         # Act
         state, reward, done = self.alg.act(state)
-        # t2 = time.time()
         # Learn
         metrics = self.alg.learn()
-        # t3 = time.time()
         # Collect Metrics
-        # self._log_metrics(metrics)
-
-        # if done and self._curr_episode % self._log_interval == 0:
-        #     print("Time Act: {:.3f}ms".format((t2-t1)*1000))
-        #     print("Time Learn: {:.3f}ms".format((t3-t2)*1000))
-        #     print("Total: {:.3f}ms".format((t3-t1)*1000))
-        #     print("------------------------------------")
-        #     t1 = deepcopy(t2)
-
-
+        self._log_metrics(metrics)
+        # Return
         return state, reward, done
 
     def _eval_online(self, reward, done):
         self._log_reward(reward, done)
         if done:
             self._average_returns.append(np.mean(self._returns[-self._window:-1]))
-            # if self._curr_episode % self._log_interval == 0:
-            #     self._print_progress()
 
     def _eval_offline(self):
         if self.alg.steps % self._eval_timesteps == 0:
@@ -148,7 +129,6 @@ class Evaluator():
                 self._log_reward(reward, done)
                 if(self._curr_episode == self._window):
                     self._average_returns.append(np.mean(self._returns))
-                    # self._print_progress()
                     self._returns = [0.0]
                     self._curr_episode = 0
                     break

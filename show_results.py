@@ -47,11 +47,36 @@ from evaluator.plot import plot_dataset, compare_datasets, plot_action
 
 
 ## Action Smoothness
-env = gym.make('InvertedPendulumSwingupPyBulletEnv-v0')
-data1 = 'data/TRPO_InvertedPendulumSwingupPyBulletEnv-v0_actions.npz'
-data2 = 'data/SAC_InvertedPendulumSwingupPyBulletEnv-v0_actions.npz'
-data3 = 'data/TRPO_Pendulum-v0_actions.npz'
-# plot_action(data1, env)
-plot_action(data2, env)
+# env = gym.make('InvertedPendulumSwingupPyBulletEnv-v0')
+# data1 = 'data/TRPO_InvertedPendulumSwingupPyBulletEnv-v0_actions.npz'
+# data2 = 'data/SAC_InvertedPendulumSwingupPyBulletEnv-v0_actions.npz'
+# data3 = 'data/TRPO_Pendulum-v0_actions.npz'
+# # plot_action(data1, env)
+# plot_action(data2, env)
+
+# Benchmark
+
+data = ['data/fromServer/TRPO_Pendulum-v0_returns.npz',
+        'data/fromServer/PPO_Pendulum-v0_returns.npz',
+        'data/fromServer/SAC_Pendulum-v0_returns.npz',
+        'data/fromServer/TD3_Pendulum-v0_returns.npz',
+        'data/fromServer/CGP_Pendulum-v0_returns.npz']
+
+compare_datasets(data, goal=-250, show=False)
+
+# 1, 2 and 5 steps
+data = ['data/fromServer/1step/SAC_Pendulum-v0_returns.npz',
+        'data/fromServer/2step/SAC_Pendulum-v0_returns.npz',
+        'data/fromServer/SAC_Pendulum-v0_returns.npz']
+
+compare_datasets(data, goal=-250, show=False)
+
+
+data = 'data/fromServer/TRPO_Pendulum-v0_actions.npz'
+plot_dataset(data)
+
 
 plt.show()
+
+
+
