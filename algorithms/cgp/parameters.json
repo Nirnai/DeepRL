@@ -1,17 +1,20 @@
 {
+    "value" : {
+        "ARCHITECTURE" : [
+            64,
+            64
+        ],
+        "ACTIVATION" : "Tanh",
+        "LEARNING_RATE": 1e-3,
+        "TAU": 0.005
+    },
+    "policy" : {
+        "CEM_ITERATIONS": 2,
+        "CEM_BATCH": 64,
+        "CEM_TOPK": 6
+    },
     "MEMORY_SIZE": 1e6,
     "BATCH_SIZE": 64,
-    "GAMMA": 0.99,
-    "TAU": 0.005,
-    "LEARNING_RATE": 1e-3,
-    "ACTIVATION" : "Tanh",
-    "ARCHITECTURE" : [
-        3,
-        64,
-        64,
-        1
-    ],
-    "CEM_ITERATIONS": 2,
-    "CEM_BATCH": 64,
-    "CEM_TOPK": 6
+    "UPDATE_STEPS": 1,
+    "GAMMA": 0.99
 }

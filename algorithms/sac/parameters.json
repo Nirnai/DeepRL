@@ -1,17 +1,24 @@
 {
-    "ACTIVATION" : "Tanh",
-    "ARCHITECTURE" : [
-        4,
-        64,
-        64,
-        2
-    ],
-    "LEARNING_RATE": 1e-3,
-    "SEED" : null,
-    "MEMORY_SIZE": 1e5,
+    "qvalue" : {
+        "ARCHITECTURE" : [
+            64,
+            64
+        ],
+        "ACTIVATION" : "Tanh",
+        "LEARNING_RATE": 1e-3,
+        "TAU": 0.005
+    },
+    "policy" : {
+        "ARCHITECTURE" : [
+            64,
+            64
+        ],
+        "ACTIVATION" : "Tanh",
+        "LEARNING_RATE": 1e-3
+    },
+    "MEMORY_SIZE": 1e6,
     "BATCH_SIZE": 64,
-    "UPDATE_STEPS": 1,
+    "UPDATE_STEPS": 5,
     "GAMMA" : 0.99,
-    "TAU": 0.005, 
     "ALPHA": 0.2
 }

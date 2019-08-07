@@ -2,7 +2,7 @@ import torch
 from copy import deepcopy
 from torch.distributions.kl import kl_divergence
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
-from algorithms import BaseRL, OnPolicy, VModel
+from algorithms import BaseRL, OnPolicy, ValueFunction
 from utils.policies import GaussianPolicy
 
 
@@ -10,20 +10,17 @@ class TRPO(BaseRL, OnPolicy):
     def __init__(self, env):
         super(TRPO,self).__init__(env)
         self.name = "TRPO"
-
-        self.critic = VModel(self.param)
-        self.actor = GaussianPolicy( self.param.ARCHITECTURE,
-                                     self.param.ACTIVATION,
-                                     self.param.ACTOR_LEARNING_RATE).to(self.device)
+        self.critic = ValueFunction(self.param.value, self.device)
+        self.actor = GaussianPolicy(self.param.policy, self.device)
         self.steps = 0
 
 
     def act(self, state, deterministic=False):
-        action = self.actor(torch.from_numpy(state).float().to(self.device))
-        next_state, reward, done, _ = self.env.step(action.cpu().numpy())
+        action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy()
+        next_state, reward, done, _ = self.env.step(action)
         if done:
             next_state = self.env.reset()
-        self._memory.push(state, action, reward, next_state, done) 
+        self.memory.push(state, action, reward, next_state, done) 
         self.steps += 1
         return next_state, reward, done
     

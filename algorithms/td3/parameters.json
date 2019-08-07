@@ -1,16 +1,26 @@
 {
+    "qvalue" : {
+        "ARCHITECTURE" : [
+            64,
+            64
+        ],
+        "ACTIVATION" : "Tanh",
+        "LEARNING_RATE": 1e-3, 
+        "TAU": 0.005
+    },
+    "policy" : {
+        "ARCHITECTURE" : [
+            64,
+            64
+        ],
+        "ACTIVATION" : "Tanh",
+        "LEARNING_RATE": 1e-3,
+        "TAU": 0.005
+    }, 
     "MEMORY_SIZE": 1e6,
     "BATCH_SIZE": 64,
+    "UPDATE_STEPS": 1,
     "GAMMA": 0.99,
-    "TAU": 0.005,
-    "LEARNING_RATE": 1e-3,
-    "ACTIVATION" : "Tanh",
-    "ARCHITECTURE" : [
-        3,
-        64,
-        64,
-        1
-    ],
     "POLICY_NOISE": 0.2,
     "POLICY_CLIP": 0.5,
     "POLICY_UPDATE_FREQ": 2
