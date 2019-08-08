@@ -37,15 +37,22 @@ def plot_dataset(path, total_steps=1e6, goal=0 ,statistic=None, show=True):
 def compare_datasets(paths, goal=0, show=True):
     fig = plt.figure()
     for path in paths:
+        name = os.path.basename(path)[:-4]
+        alg_name = name.split('_')[0]
+        env_name = name.split('_')[1]
+        if len(name.split('_')) == 3:
+            exp_name = name.split('_')[2]
+        else:
+            exp_name = ''
         dataset = load_dataset(path)
-        label = os.path.basename(path)[0:4]
         episodes = range(len(dataset[0]))
         mean, low, high = mean_confidance(dataset)
-        plt.plot(episodes, mean, label=label)
+        plt.plot(episodes, mean, label='{} {}'.format(alg_name, exp_name))
         plt.fill_between(episodes, low, high, alpha=0.2)
         plt.legend()
         plt.xlabel('episodes')
         plt.ylabel('Average Reward')
+        plt.title('{}'.format(env_name))
     plt.plot(episodes, [goal] * len(episodes), 'k--', label = 'goal reward')
     if show:
         plt.show()

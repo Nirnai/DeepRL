@@ -56,25 +56,20 @@ from evaluator.plot import plot_dataset, compare_datasets, plot_action
 
 # Benchmark
 
-data = ['data/fromServer/TRPO_Pendulum-v0_returns.npz',
-        'data/fromServer/PPO_Pendulum-v0_returns.npz',
-        'data/fromServer/SAC_Pendulum-v0_returns.npz',
-        'data/fromServer/TD3_Pendulum-v0_returns.npz',
-        'data/fromServer/CGP_Pendulum-v0_returns.npz']
+data = ['data/fromServer/TRPO_Pendulum-v0.npz',
+        'data/fromServer/PPO_Pendulum-v0.npz',
+        'data/fromServer/SAC_Pendulum-v0.npz',
+        'data/fromServer/TD3_Pendulum-v0.npz',
+        'data/fromServer/CGP_Pendulum-v0.npz']
 
 compare_datasets(data, goal=-250, show=False)
 
 # 1, 2 and 5 steps
-data = ['data/fromServer/1step/SAC_Pendulum-v0_returns.npz',
-        'data/fromServer/2step/SAC_Pendulum-v0_returns.npz',
-        'data/fromServer/SAC_Pendulum-v0_returns.npz']
+data = ['data/fromServer/OffPolicylargerBatches/SAC_Pendulum-v0_1-steps.npz',
+        'data/fromServer/OffPolicylargerBatches/SAC_Pendulum-v0_2-steps.npz',
+        'data/fromServer/OffPolicylargerBatches/SAC_Pendulum-v0_5-steps.npz']
 
 compare_datasets(data, goal=-250, show=False)
-
-
-data = 'data/fromServer/TRPO_Pendulum-v0_actions.npz'
-plot_dataset(data)
-
 
 plt.show()
 
