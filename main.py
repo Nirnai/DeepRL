@@ -18,19 +18,19 @@ if __name__ == '__main__':
 
     ########## Environment ###########
     # env = gym.make('CartPole-v1')
-    # env = gym.make('Pendulum-v0')
+    env = gym.make('Pendulum-v0')
     # env = gym.make('InvertedPendulum-v2')
     # env = gym.make('HalfCheetah-v2')
     # env = gym.make('InvertedPendulumPyBulletEnv-v0')
-    env = gym.make('InvertedPendulumSwingupPyBulletEnv-v0')
+    # env = gym.make('InvertedPendulumSwingupPyBulletEnv-v0')
 
 
     ########## Algorithm ###########
     # alg = TRPO(env)
     # alg = PPO(env)
-    alg = SAC(env)
+    # alg = SAC(env)
     # alg = CGP(env)
-    # alg = TD3(env)
+    alg = TD3(env)
 
     # ########### Evaluation ###########
     evl = Evaluator(alg, total_timesteps=1e6)

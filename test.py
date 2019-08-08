@@ -44,3 +44,60 @@
 # p2 = dist.MultivariateNormal(mean, std)
 
 # print(p2.sample())
+
+# import gym
+# import pybulletgym.envs 
+
+# env = gym.make("HumanoidPyBulletEnv-v0")
+# env.render()
+# env.reset()
+
+# for _ in range(10000):
+#     env.step(env.action_space.sample()) # take a random action
+# env.close()
+
+# import time
+# import gym
+# import pybulletgym
+
+# env = gym.make('InvertedPendulumPyBulletEnv-v0')
+# env.render()
+# env.reset()
+# while True:
+#     time.sleep(0.01)
+#     env.step(env.action_space.sample())
+    
+
+## Structured array for replay buffer
+
+import gym
+import torch
+import torch.multiprocessing as mp
+from algorithms import SAC
+
+def play(env, q):
+    alg = SAC(env)
+    state = env.reset()
+    for i in range(10):
+        (state, action, reward, next_state, done) = alg.act(state)
+        print("Experiance: {}".format((state, action, reward, next_state, done)))
+        q.put((state, action, reward, next_state, done))  
+        state = next_state
+
+if __name__ == "__main__":
+    mp.set_start_method('spawn')
+    env = gym.make('Pendulum-v0')
+    
+    q = mp.Queue(maxsize=10)  
+    p = mp.Process(target=play, args=(env,q))
+    p.start()
+    while p.is_alive():
+        print("Test")
+        exp = q.get()
+        if exp is None:
+            p.join()
+            break
+
+from evaluator.plot import plot_dataset
+data = 'data/SAC_Pendulum-v0_returns.npz'
+plot_dataset(data)

@@ -1,16 +1,23 @@
 {
+    "value" : {
+        "ARCHITECTURE" : [
+            64,
+            64
+        ],
+        "ACTIVATION" : "Tanh",
+        "LEARNING_RATE": 1e-1
+    },
+    "policy" : {
+        "ARCHITECTURE" : [
+            64,
+            64
+        ],
+        "ACTIVATION" : "Tanh",
+        "LEARNING_RATE": 1e-2
+    },
     "BATCH_SIZE": 5000,
     "EPOCHS": 4,
     "GAMMA" : 0.99,
     "LAMBDA" : 0.95,
-    "ACTOR_LEARNING_RATE" : 1e-2,
-    "CRITIC_LEARNING_RATE": 1e-1,
-    "ACTIVATION" : "Tanh",
-    "ARCHITECTURE" : [
-        3,
-        64,
-        64,
-        1
-    ],
     "CLIP" : 0.2
 }

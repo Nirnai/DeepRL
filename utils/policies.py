@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributions as dist
 import torch.optim as optim
+from utils.helper import soft_target_update
 
 def activated_layer(in_, out_, activation_):
     return nn.Sequential(
@@ -32,15 +33,17 @@ def unwrap_layers(model):
 
 
 class GaussianPolicy(nn.Module):
-    def __init__(self, architecture, activation, learning_rate):
+    def __init__(self, params, device):
         super(GaussianPolicy, self).__init__()
-        activation = getattr(nn.modules.activation, activation)()
-        layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:-1])]
+        activation = getattr(nn.modules.activation, params['ACTIVATION'])()
+        layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(params['ARCHITECTURE'][:-1], params['ARCHITECTURE'][1:-1])]
         hidden_layers = nn.Sequential(*layers)
-        output_layer = linear_layer(architecture[-2], architecture[-1])
+        output_layer = linear_layer(params['ARCHITECTURE'][-2], params['ARCHITECTURE'][-1])
         self._mean = unwrap_layers(nn.Sequential(hidden_layers, output_layer))
-        self._log_std = nn.Parameter(torch.ones(architecture[-1]))
-        self._optim = optim.Adam(self.parameters(), lr=learning_rate)
+        self._log_std = nn.Parameter(torch.ones(params['ARCHITECTURE'][-1]))
+        self._optim = optim.Adam(self.parameters(), lr=params['LEARNING_RATE'])
+        self.device = device
+        self.to(self.device)
 
     def forward(self, state, deterministic=False):
         if deterministic:
@@ -71,8 +74,8 @@ class GaussianPolicy(nn.Module):
 
 
 class BoundedGaussianPolicy(GaussianPolicy):
-    def __init__(self, architecture, activation, learning_rate):
-        super(BoundedGaussianPolicy, self).__init__(architecture, activation, learning_rate)
+    def __init__(self, params, device):
+        super(BoundedGaussianPolicy, self).__init__(params, device)
 
     def forward(self, state, deterministic=False):
         if deterministic:
@@ -88,17 +91,19 @@ class BoundedGaussianPolicy(GaussianPolicy):
     def rsample(self, state):
         policy = self.policy(state)
         action = policy.rsample()
-        log_prob = self.log_prob(state, action)
+        log_prob = (policy.log_prob(action) - torch.log1p(-torch.tanh(action).pow(2) + 1e-6)).sum(dim=-1)
         return torch.tanh(action), log_prob
 
 
 class DeterministicPolicy(nn.Module):
-    def __init__(self, architecture, activation, learning_rate):
+    def __init__(self, params, device):
         super(DeterministicPolicy, self).__init__()
-        activation = getattr(nn.modules.activation, activation)()
-        layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(architecture[:-1], architecture[1:])]
+        self.device = device
+        activation = getattr(nn.modules.activation, params['ACTIVATION'])()
+        layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(params['ARCHITECTURE'][:-1], params['ARCHITECTURE'][1:])]
         self._action = unwrap_layers(nn.Sequential(*layers))
-        self._optim = optim.Adam(self.parameters(), lr=learning_rate)
+        self._optim = optim.Adam(self.parameters(), lr=params['LEARNING_RATE'])
+        self.to(self.device)
     
     def forward(self, state):
         return self._action(state)
@@ -107,31 +112,35 @@ class DeterministicPolicy(nn.Module):
         self._optim.zero_grad()
         loss.backward()
         self._optim.step()
+        
 
  
 
-class CrossEntropyGuidedPolicy():
-    def __init__(self, Q, action_dim, iterations, batch, topk):
-        self.Q = Q
-        self.action_dim = action_dim
-        self.iterations = iterations
-        self.batch = batch
-        self.topk = topk
+class CrossEntropyGuidedPolicy(nn.Module):
+    def __init__(self, q_function, params, device):
+        super(CrossEntropyGuidedPolicy, self).__init__()
+        self.q_function = q_function
+        self.action_dim = params['ACTION_DIM']
+        self.iterations = params['CEM_ITERATIONS']
+        self.batch = params['CEM_BATCH']
+        self.topk = params['CEM_TOPK']
+        self.device = device
+        self.to(self.device)
 
-    def __call__(self, state):
+    def forward(self, state):
         if state.dim() == 2:
-            mean = torch.zeros(state.shape[0], self.action_dim)
-            std = torch.ones(state.shape[0], self.action_dim)
+            mean = torch.zeros(state.shape[0], self.action_dim).to(self.device)
+            std = torch.ones(state.shape[0], self.action_dim).to(self.device)
         else:
-            mean = torch.Tensor([0.0] * self.action_dim)
-            std = torch.Tensor([1.0] * self.action_dim)
+            mean = torch.Tensor([0.0] * self.action_dim).to(self.device)
+            std = torch.Tensor([1.0] * self.action_dim).to(self.device)
         
         for i in range(self.iterations):
             p = dist.Normal(mean, std)
             states = torch.cat(self.batch*[state.unsqueeze(0)], dim=0)
             actions = p.sample((self.batch,))
             with torch.no_grad():
-                Qs, _ = self.Q(states, actions)
+                Qs, _ = self.q_function(states, actions)
             Is = Qs.topk(self.topk , dim=0)[1]
             if Is.dim() == 2:
                 mean = torch.cat([torch.index_select(a, 0, i).unsqueeze(0) for a, i in zip(actions, Is)]).mean(dim = 0)
