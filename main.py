@@ -1,39 +1,40 @@
-import itertools
 import gym 
-try:
-    import mujoco_py
-except ImportError:
-    pass
-try:
-    import pybulletgym
-except ImportError:
-    pass
-import torch
+import envs
 from algorithms import PPO, TRPO, SAC, CGP, TD3
 from evaluator import Evaluator, plot_dataset
 
+
+# try:
+#     import mujoco_py
+# except ImportError:
+#     pass
+# try:
+#     import pybulletgym
+# except ImportError:
+#     pass
 # from evaluation import Evaluation
 
 if __name__ == '__main__':
 
     ########## Environment ###########
     # env = gym.make('CartPole-v1')
-    env = gym.make('Pendulum-v0')
+    # env = gym.make('Pendulum-v0')
     # env = gym.make('InvertedPendulum-v2')
     # env = gym.make('HalfCheetah-v2')
     # env = gym.make('InvertedPendulumPyBulletEnv-v0')
     # env = gym.make('InvertedPendulumSwingupPyBulletEnv-v0')
-
+    # env = gym.make('PendulumSwingup-v0')
+    env = gym.make('CartpoleSwingup-v0')
 
     ########## Algorithm ###########
-    # alg = TRPO(env)
+    alg = TRPO(env)
     # alg = PPO(env)
     # alg = SAC(env)
     # alg = CGP(env)
-    alg = TD3(env)
+    # alg = TD3(env)
 
     # ########### Evaluation ###########
-    evl = Evaluator(alg, total_timesteps=1e6)
+    evl = Evaluator(alg, total_timesteps=5e6)
     evl.evaluate('data')
     # ##################################
 

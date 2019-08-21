@@ -56,20 +56,51 @@ from evaluator.plot import plot_dataset, compare_datasets, plot_action
 
 # Benchmark
 
-data = ['data/fromServer/TRPO_Pendulum-v0.npz',
-        'data/fromServer/PPO_Pendulum-v0.npz',
-        'data/fromServer/SAC_Pendulum-v0.npz',
-        'data/fromServer/TD3_Pendulum-v0.npz',
-        'data/fromServer/CGP_Pendulum-v0.npz']
+# data = ['data/fromServer/TRPO_Pendulum-v0.npz',
+#         'data/fromServer/PPO_Pendulum-v0.npz',
+#         'data/fromServer/SAC_Pendulum-v0.npz',
+#         'data/fromServer/TD3_Pendulum-v0.npz',
+#         'data/fromServer/CGP_Pendulum-v0.npz']
+
+# compare_datasets(data, goal=-250, show=False)
+
+# # 1, 2 and 5 steps
+# data = ['data/fromServer/OffPolicylargerBatches/SAC_Pendulum-v0_1-steps.npz',
+#         'data/fromServer/OffPolicylargerBatches/SAC_Pendulum-v0_2-steps.npz',
+#         'data/fromServer/OffPolicylargerBatches/SAC_Pendulum-v0_5-steps.npz']
+
+# compare_datasets(data, goal=-250, show=False)
+
+# # Time limit test
+data = ['data/trpo/valueMultiOptim/lambda095/TRPO_Pendulum-v0_returns.npz',
+        'data/trpo/valueSingleOptim/TRPO_Pendulum-v0_returns.npz'
+        ]
 
 compare_datasets(data, goal=-250, show=False)
+plt.ylim([-1500, 100])
 
-# 1, 2 and 5 steps
-data = ['data/fromServer/OffPolicylargerBatches/SAC_Pendulum-v0_1-steps.npz',
-        'data/fromServer/OffPolicylargerBatches/SAC_Pendulum-v0_2-steps.npz',
-        'data/fromServer/OffPolicylargerBatches/SAC_Pendulum-v0_5-steps.npz']
+data = ['data/trpo/valueMultiOptim/lambda095/TRPO_Pendulum-v0_value.npz',
+        'data/trpo/valueSingleOptim/TRPO_Pendulum-v0_value.npz'
+        ]
 
 compare_datasets(data, goal=-250, show=False)
+plt.ylim([-1500,100])
+# data = ['data/sac/SAC_CartpoleSwingup-v0_returns.npz',
+#         'data/trpo/TRPO_CartpoleSwingup-v0_returns.npz'
+#         ]
+
+# compare_datasets(data, goal=1000, show=False)
+
+# data = 'data/sac/SAC_CartpoleSwingup-v0_returns.npz'
+# plot_dataset(data, goal=1000, show=False, statistic='normal')
+
+data = 'data/TRPO_CartpoleSwingup-v0_returns.npz'
+plot_dataset(data, goal=1000, show=False, statistic='normal')
+
+data = 'data/TRPO_CartpoleSwingup-v0_value.npz'
+plot_dataset(data, goal=1000, show=False, statistic='normal')
+
+
 
 plt.show()
 

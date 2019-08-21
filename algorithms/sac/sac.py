@@ -17,11 +17,12 @@ class SAC(BaseRL, OffPolicy):
 
 
     def act(self, state, deterministic=False):
+        initial = False
         action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy()
         next_state, reward, done, _ = self.env.step(action)
         if done:
             next_state = self.env.reset() 
-        self.memory.push(state, action, reward, next_state, done)
+        self.memory.push(state, action, reward, next_state, done, initial)
         self.steps += 1
         return next_state, reward, done
 

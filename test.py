@@ -1,103 +1,77 @@
-# import os
-# import mujoco_py
+import gym 
+import envs
+from algorithms import PPO, TRPO, SAC, CGP, TD3
+from evaluator import Evaluator, plot_dataset
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
+env = gym.make('AcrobotSwingup-v0')
+env.reset()
+
+frames = []
+for t in range(1000):
+    observation, reward, done, info = env.step(env.action_space.sample()) # take a random action
+    frame = env.render(mode='rgb')
+    frames.append(frame)
+env.close()
 
 
-# mj_path, _ = mujoco_py.utils.discover_mujoco()
-# xml_path = os.path.join(mj_path, 'model', 'humanoid.xml')
-# model = mujoco_py.load_model_from_path(xml_path)
-# sim = mujoco_py.MjSim(model)
-# print(sim.data.qpos)
-# sim.step()
-# print(sim.data.qpos)
 
-# import gym
+
+# Writer = animation.writers['ffmpeg']
+# writer = Writer(fps=10, metadata=dict(artist='Me'), bitrate=1800)
+fig = plt.figure()
+im = []
+for frame in frames:
+    im.append([plt.imshow(frame)])
+ani = animation.ArtistAnimation(fig, im, interval=10, blit=True, repeat_delay=1000)
+ani.save('dynamic_images.mp4')
+# plt.show()
+
 # import numpy as np
-# from itertools import count
-# env = gym.make("InvertedPendulum-v2")
-# observation = env.reset()
-# # q_pos = np.array([0.0,3.0])
-# # q_vel = np.array([0.0,0.0])
-# # env.set_state(q_pos, q_vel)
-# # observation = np.array(q_pos, q_vel)
-# env.render()
-# for t in count():
-#   # env.render()
-#   action = env.action_space.sample()
-#   observation, reward, done, info = env.step(action)
-#   # if done:
-#   #   # observation = env.reset()
-#   #   env.set_state(q_pos, q_vel)
-#   #   observation = np.array(q_pos, q_vel)
-
-# # env.close()
+# import matplotlib
+# matplotlib.use("Agg")
+# import matplotlib.pyplot as plt
+# import matplotlib.animation as animation
 
 
-# import torch
-# import torch.distributions as dist
+# def update_line(num, data, line):
+#     line.set_data(data[..., :num])
+#     return line,
 
-# mean = torch.Tensor([1]) 
-# std = torch.Tensor([[0.1]])
+# # Fixing random state for reproducibility
+# np.random.seed(19680801)
 
-# torch.manual_seed(0)
 
-# # p1 = dist.Normal(mean, std)
-# p2 = dist.MultivariateNormal(mean, std)
+# # Set up formatting for the movie files
+# Writer = animation.writers['ffmpeg']
+# writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
 
-# print(p2.sample())
 
-# import gym
-# import pybulletgym.envs 
+# fig1 = plt.figure()
 
-# env = gym.make("HumanoidPyBulletEnv-v0")
-# env.render()
-# env.reset()
+# data = np.random.rand(2, 25)
+# l, = plt.plot([], [], 'r-')
+# plt.xlim(0, 1)
+# plt.ylim(0, 1)
+# plt.xlabel('x')
+# plt.title('test')
+# line_ani = animation.FuncAnimation(fig1, update_line, 25, fargs=(data, l),
+#                                    interval=50, blit=True)
+# line_ani.save('lines.mp4', writer=writer)
 
-# for _ in range(10000):
-#     env.step(env.action_space.sample()) # take a random action
-# env.close()
+# fig2 = plt.figure()
 
-# import time
-# import gym
-# import pybulletgym
+# x = np.arange(-9, 10)
+# y = np.arange(-9, 10).reshape(-1, 1)
+# base = np.hypot(x, y)
+# ims = []
+# for add in np.arange(15):
+#     ims.append((plt.pcolor(x, y, base + add, norm=plt.Normalize(0, 30)),))
 
-# env = gym.make('InvertedPendulumPyBulletEnv-v0')
-# env.render()
-# env.reset()
-# while True:
-#     time.sleep(0.01)
-#     env.step(env.action_space.sample())
-    
-
-## Structured array for replay buffer
-
-import gym
-import torch
-import torch.multiprocessing as mp
-from algorithms import SAC
-
-def play(env, q):
-    alg = SAC(env)
-    state = env.reset()
-    for i in range(10):
-        (state, action, reward, next_state, done) = alg.act(state)
-        print("Experiance: {}".format((state, action, reward, next_state, done)))
-        q.put((state, action, reward, next_state, done))  
-        state = next_state
-
-if __name__ == "__main__":
-    mp.set_start_method('spawn')
-    env = gym.make('Pendulum-v0')
-    
-    q = mp.Queue(maxsize=10)  
-    p = mp.Process(target=play, args=(env,q))
-    p.start()
-    while p.is_alive():
-        print("Test")
-        exp = q.get()
-        if exp is None:
-            p.join()
-            break
-
-from evaluator.plot import plot_dataset
-data = 'data/SAC_Pendulum-v0_returns.npz'
-plot_dataset(data)
+# im_ani = animation.ArtistAnimation(fig2, ims, interval=50, repeat_delay=3000,
+#                                    blit=True)
+# im_ani.save('im.mp4', writer=writer)

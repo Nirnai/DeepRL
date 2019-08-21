@@ -1,10 +1,7 @@
 import time
 import os
 import inspect
-
-# import random
 import numpy as np
-
 import torch
 import torch.optim as optim
 from abc import ABCMeta, abstractmethod
@@ -19,7 +16,7 @@ class BaseRL(metaclass=ABCMeta):
         self.env = env
         self.device = torch.device(device)
         self.rng = np.random.RandomState(0)
-        self.state_dim, self.action_dim, self.action_space = getEnvInfo(env)
+        self.state_dim, self.action_dim = getEnvInfo(env)
         self.param = self.load_parameters()
         models = ['value', 'qvalue', 'policy']
         for model in models: 

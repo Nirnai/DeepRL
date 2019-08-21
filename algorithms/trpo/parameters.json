@@ -5,7 +5,7 @@
             64
         ],
         "ACTIVATION" : "Tanh",
-        "LEARNING_RATE": 1e-1
+        "LEARNING_RATE": 1e-2
     },
     "policy" : {
         "ARCHITECTURE" : [
@@ -15,12 +15,12 @@
         "ACTIVATION" : "Tanh",
         "LEARNING_RATE": 0
     },
-    "BATCH_SIZE": 5000,
-    "GAMMA" : 0.99,
+    "BATCH_SIZE": 10000,
+    "GAMMA" : 0.999,
     "LAMBDA" : 0.95,
     "DELTA" : 0.01, 
     "ALPHA" : 0.8,
     "NUM_BACKTRACK" : 10, 
     "NUM_CG_ITER": 10,
     "CG_DAMPING": 0.1
-}
+} 

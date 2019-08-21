@@ -5,6 +5,8 @@ import torch.multiprocessing as mp
 from copy import deepcopy
 from itertools import count
 # from plot import plot_dataset
+import matplotlib.animation as animation
+import matplotlib.pyplot as plt
 
 class Evaluator():
     def __init__(self, algorithm, total_timesteps=1e6, eval_timesteps=1000, averaging_window=20):
@@ -40,8 +42,25 @@ class Evaluator():
             self.reset()
             self._train(eval_mode=mode)
             self.save_returns(output_filename)
-            self.save_actions(output_filename)
+            # self.save_actions(output_filename)
             self.save_metrics(output_filename)
+        self.save_video(output_filename)
+        
+    def save_video(self, path):
+        done = True
+        frames = []
+        for t in range(1000):
+            if done:
+                state = self.alg.env.reset()
+            state, reward, done = self._step(state)
+            frames.append(self.alg.env.render(mode='rgb_array'))
+        fig = plt.figure()
+        im = []
+        for frame in frames:
+            im.append([plt.imshow(frame)])
+        ani = animation.ArtistAnimation(fig, im, interval=10, blit=True, repeat_delay=1000)
+        ani.save('{}.mp4'.format(path))
+        
 
     def save_returns(self, path):
         returns_file = '{}_returns.npz'.format(path)
@@ -92,8 +111,7 @@ class Evaluator():
                 NotImplementedError
             if done and self._curr_episode % self._log_interval == 0:
                 self._print_progress()
-                # print("Total: {:.3f}ms".format(avarage_time * 1000 / (t+1)))
-                # print("------------------------------------")
+                
 
     def _step(self, state):
         # Act

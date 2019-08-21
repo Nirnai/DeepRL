@@ -16,11 +16,16 @@ class TRPO(BaseRL, OnPolicy):
 
 
     def act(self, state, deterministic=False):
+        ######################################
+        initial = False
+        # if self.env.last_u is None:
+        #     initial = True
+        if self.env.timestep.step_type == 0:
+            initial = True
+        ######################################
         action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy()
         next_state, reward, done, _ = self.env.step(action)
-        if done:
-            next_state = self.env.reset()
-        self.memory.push(state, action, reward, next_state, done) 
+        self.memory.push(state, action, reward, next_state, done, initial) 
         self.steps += 1
         return next_state, reward, done
     
@@ -29,10 +34,11 @@ class TRPO(BaseRL, OnPolicy):
     def learn(self):
         rollouts = self.onPolicyData
         # Compute Advantages
-        advantages = self.gae(rollouts) 
-        # Update Critic
-        critic_loss = advantages.pow(2).mean()
-        self.critic.optimize(critic_loss)
+        for i in range(10):
+            advantages = self.gae(rollouts) 
+            # Update Critic
+            critic_loss = advantages.pow(2).mean()
+            self.critic.optimize(critic_loss)
         # Update Actor
         advantages = (advantages - advantages.mean()) / advantages.std()
         pg = self.policy_gradient(advantages, rollouts)
@@ -41,9 +47,8 @@ class TRPO(BaseRL, OnPolicy):
         self.optimize_actor(parameters)
 
         metrics = dict()
-        metrics['loss'] = critic_loss.item()
-        metrics['value'] = self.critic(rollouts.next_state[(1-rollouts.mask).type(torch.BoolTensor)]).mean().item()
-        metrics['entropy'] = self.actor.entropy(rollouts.state).mean().item()
+        # metrics['loss'] = critic_loss.item()
+        metrics['value'] = self.critic(rollouts.state[(rollouts.initial).type(torch.BoolTensor)]).mean().item()
         return metrics
 
     ################################################################
@@ -80,8 +85,8 @@ class TRPO(BaseRL, OnPolicy):
         values = torch.cat((values, next_value))
         advantages = [0] * (len(rollouts.reward) + 1 )
         for t in reversed(range(len(rollouts.reward))):
-            delta = rollouts.reward[t] + self.param.GAMMA * values[t+1] * rollouts.mask[t] - values[t]
-            advantages[t] = delta + self.param.GAMMA * self.param.LAMBDA * rollouts.mask[t] * advantages[t+1]
+            delta = rollouts.reward[t] + self.param.GAMMA * values[t+1] - values[t]
+            advantages[t] = delta + self.param.GAMMA * self.param.LAMBDA * advantages[t+1]
         advantages = torch.stack(advantages[:-1])
         return advantages 
 
