@@ -100,13 +100,15 @@ class DeterministicPolicy(nn.Module):
         super(DeterministicPolicy, self).__init__()
         self.device = device
         activation = getattr(nn.modules.activation, params['ACTIVATION'])()
-        layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(params['ARCHITECTURE'][:-1], params['ARCHITECTURE'][1:])]
-        self._action = unwrap_layers(nn.Sequential(*layers))
+        layers = [activated_layer(in_, out_, activation) for in_, out_ in zip(params['ARCHITECTURE'][:-1], params['ARCHITECTURE'][1:-1])]
+        hidden_layers = nn.Sequential(*layers)
+        output_layer = linear_layer(params['ARCHITECTURE'][-2], params['ARCHITECTURE'][-1])
+        self._action = unwrap_layers(nn.Sequential(hidden_layers, output_layer))
         self._optim = optim.Adam(self.parameters(), lr=params['LEARNING_RATE'])
         self.to(self.device)
     
     def forward(self, state):
-        return self._action(state)
+        return torch.tanh(self._action(state))
 
     def optimize(self, loss):
         self._optim.zero_grad()

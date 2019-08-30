@@ -27,29 +27,30 @@ if __name__ == '__main__':
     env = gym.make('CartpoleSwingup-v0')
 
     ########## Algorithm ###########
-    alg = TRPO(env)
+    # alg = TRPO(env)
     # alg = PPO(env)
     # alg = SAC(env)
     # alg = CGP(env)
-    # alg = TD3(env)
+    alg = TD3(env)
 
     # ########### Evaluation ###########
-    evl = Evaluator(alg, total_timesteps=5e6)
+    evl = Evaluator(alg, total_timesteps=1e6)
     evl.evaluate('data')
     # ##################################
 
 
-    ########## One Learning Loop #########
-    # env.render()
+    ########## One Learning Loop #########    
     # state = env.reset()
     # for t in range(int(1e6)):
+    #     env.render()
     #     # Act
     #     state, reward, done = alg.act(state)
     #     # Train
     #     metrics = alg.learn()
+    #     if done:
+    #         state = env.reset()
     #     # Log
-    #     evl._log_metrics(metrics)
-    #     evl._eval_online(reward, done)
+    #     print("Timestep: {} \nReward: {} \n -----------------------".format(t, reward))
     ########## One Learning Loop #########
 
 

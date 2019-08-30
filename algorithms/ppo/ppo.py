@@ -13,11 +13,16 @@ class PPO(BaseRL, OnPolicy):
 
 
     def act(self, state, deterministic=False):
+        ######################################
+        initial = False
+        # if self.env.last_u is None:
+        #     initial = True
+        if self.env.timestep.step_type == 0:
+            initial = True
+        ######################################
         action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy()
         next_state, reward, done, _ = self.env.step(action)
-        if done:
-            next_state = self.env.reset()
-        self.memory.push(state, action, reward, next_state, done) 
+        self.memory.push(state, action, reward, next_state, done, initial) 
         self.steps += 1
         return next_state, reward, done
     
@@ -36,8 +41,7 @@ class PPO(BaseRL, OnPolicy):
             self.actor.optimize(actor_loss)
 
         metrics = dict()
-        metrics['value loss'] = critic_loss.item()
-        metrics['policy entropy'] = self.actor.entropy(rollouts.state).sum().item()
+        metrics['value'] = self.critic(rollouts.state[(rollouts.initial).type(torch.BoolTensor)]).mean().item()
         return metrics
 
     ################################################################
@@ -59,6 +63,7 @@ class PPO(BaseRL, OnPolicy):
 
     def gae(self, rollouts):
         '''  Generaized Advantage Estimation '''
+        # states = torch.cat([rollouts.state, rollouts.next_state[-1].unsqueeze(-1)], dim=-1)
         values = self.critic(rollouts.state).squeeze()
         with torch.no_grad():
             next_value = self.critic(rollouts.next_state[-1]).unsqueeze(-1)

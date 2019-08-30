@@ -4,18 +4,17 @@ from algorithms import PPO, TRPO, SAC, CGP, TD3
 from evaluator import Evaluator, plot_dataset
 
 import matplotlib
-matplotlib.use("Agg")
+# matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-env = gym.make('AcrobotSwingup-v0')
+env = gym.make('PendulumSwingup-v0')
 env.reset()
 
 frames = []
 for t in range(1000):
+    env.render()
     observation, reward, done, info = env.step(env.action_space.sample()) # take a random action
-    frame = env.render(mode='rgb')
-    frames.append(frame)
 env.close()
 
 

@@ -17,7 +17,13 @@ class SAC(BaseRL, OffPolicy):
 
 
     def act(self, state, deterministic=False):
+        ######################################
         initial = False
+        # if self.env.last_u is None:
+        #     initial = True
+        if self.env.timestep.step_type == 0:
+            initial = True
+        ######################################
         action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy()
         next_state, reward, done, _ = self.env.step(action)
         if done:
@@ -34,7 +40,7 @@ class SAC(BaseRL, OffPolicy):
         with torch.no_grad():
             new_action_next, log_prob_next = self.actor.rsample(batch.next_state)
             q1_next, q2_next = self.critic.target(batch.next_state, new_action_next)
-            q_target = batch.reward + self.param.GAMMA * batch.mask * torch.min(q1_next, q2_next) - self.param.ALPHA * log_prob_next
+            q_target = batch.reward + self.param.GAMMA * torch.min(q1_next, q2_next) - self.param.ALPHA * log_prob_next
         critic_loss = F.mse_loss(q1, q_target) + F.mse_loss(q2, q_target)
         self.critic.optimize(critic_loss)
 
@@ -46,9 +52,10 @@ class SAC(BaseRL, OffPolicy):
         
         # Return Metrics
         metrics = dict()
-        # data = self._memory.replay()
-        # terminals = (1-data.mask).type(torch.BoolTensor)
-        # next_state = data.next_state[terminals]
+        if self.steps % 5000 == 0:
+            data = self.memory.replay()
+            q1,_ = self.critic(data.state[(data.initial).type(torch.BoolTensor)], data.action[(data.initial).type(torch.BoolTensor)])
+            metrics['value'] = q1.mean().item()
         # if len(next_state) > 0:
         #     next_action = self.actor(next_state)
         #     q1, q2 = self.critic(next_state, next_action)

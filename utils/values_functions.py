@@ -2,11 +2,18 @@ import torch
 import torch.nn as nn
 from copy import deepcopy
 
-def activated_layer(in_, out_, activation_):
-    return nn.Sequential(
-        nn.Linear(in_, out_),
-        activation_
-        )
+def activated_layer(in_, out_, activation_, normalization=False):
+    if normalization:
+        return nn.Sequential(
+            nn.Linear(in_, out_),
+            nn.BatchNorm1d(out_),
+            activation_
+            )
+    else:
+        return nn.Sequential(
+            nn.Linear(in_, out_),
+            activation_
+            )
 
 def linear_layer(in_, out_):
     return nn.Sequential(

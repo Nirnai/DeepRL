@@ -17,7 +17,7 @@
         "LEARNING_RATE": 1e-3
     },
     "MEMORY_SIZE": 1e6,
-    "BATCH_SIZE": 64,
+    "BATCH_SIZE": 128,
     "UPDATE_STEPS": 5,
     "GAMMA" : 0.99,
     "ALPHA": 0.2

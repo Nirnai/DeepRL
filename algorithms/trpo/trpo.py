@@ -34,17 +34,19 @@ class TRPO(BaseRL, OnPolicy):
     def learn(self):
         rollouts = self.onPolicyData
         # Compute Advantages
-        for i in range(10):
+        for i in range(self.param.VALUE_EPOCHS):
             advantages = self.gae(rollouts) 
             # Update Critic
             critic_loss = advantages.pow(2).mean()
             self.critic.optimize(critic_loss)
         # Update Actor
-        advantages = (advantages - advantages.mean()) / advantages.std()
-        pg = self.policy_gradient(advantages, rollouts)
-        npg = self.natural_gradient(pg, rollouts)
-        parameters = self.linesearch(npg, pg, rollouts)
-        self.optimize_actor(parameters)
+        for i in range(self.param.POLICY_EPOCHS):
+            advantages = self.gae(rollouts) 
+            advantages = (advantages - advantages.mean()) / advantages.std()
+            pg = self.policy_gradient(advantages, rollouts)
+            npg = self.natural_gradient(pg, rollouts)
+            parameters = self.linesearch(npg, pg, rollouts)
+            self.optimize_actor(parameters)
 
         metrics = dict()
         # metrics['loss'] = critic_loss.item()
@@ -86,7 +88,7 @@ class TRPO(BaseRL, OnPolicy):
         advantages = [0] * (len(rollouts.reward) + 1 )
         for t in reversed(range(len(rollouts.reward))):
             delta = rollouts.reward[t] + self.param.GAMMA * values[t+1] - values[t]
-            advantages[t] = delta + self.param.GAMMA * self.param.LAMBDA * advantages[t+1]
+            advantages[t] = delta + self.param.GAMMA * self.param.LAMBDA * rollouts.mask[t] *  advantages[t+1]
         advantages = torch.stack(advantages[:-1])
         return advantages 
 

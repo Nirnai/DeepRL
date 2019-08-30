@@ -17,17 +17,25 @@ class TD3(BaseRL, OffPolicy):
         self.steps = 0                    
 
     
-    def act(self, state, noise=0.1):
+    def act(self, state, deterministic=False):
+       ######################################
+        initial = False
+        # if self.env.last_u is None:
+        #     initial = True
+        if self.env.timestep.step_type == 0:
+            initial = True
+        ######################################
         with torch.no_grad():
             action = self.actor(torch.from_numpy(state).float().to(self.device))
-        if noise != 0:
-            action += torch.randn(action.shape).to(self.device) * noise 
-            action = torch.clamp(action, self.env.action_space.low.item(), self.env.action_space.high.item()).cpu().numpy()
+        if deterministic is False:
+            if self.param.POLICY_EXPLORATION_NOISE != 0:
+                action += torch.randn(action.shape).to(self.device) * self.param.POLICY_EXPLORATION_NOISE 
+                action = torch.clamp(action, self.env.action_space.low.item(), self.env.action_space.high.item()).cpu().numpy()
         next_state, reward, done, _ = self.env.step(action) 
-        self.memory.push(state, action, reward, next_state, done)
+        self.memory.push(state, action, reward, next_state, done, initial)
         self.steps += 1
-        if done:
-            next_state = self.env.reset()
+        # if done:
+        #     next_state = self.env.reset()
         return next_state, reward, done
 
 
@@ -35,7 +43,8 @@ class TD3(BaseRL, OffPolicy):
     def learn(self):
         batch = self.offPolicyData
 
-        noise = torch.randn(batch.action.shape).to(self.device) * self.param.POLICY_NOISE
+        # Add noise on experience
+        noise = torch.randn(batch.action.shape).to(self.device) * self.param.POLICY_UPDATE_NOISE
         noise = torch.clamp(noise, -self.param.POLICY_CLIP, self.param.POLICY_CLIP)
         next_action = self.actor_target(batch.next_state) + noise
 
@@ -54,3 +63,16 @@ class TD3(BaseRL, OffPolicy):
             actor_loss = -Q.mean()
             self.actor.optimize(actor_loss)
             soft_target_update(self.actor, self.actor_target, self.param.policy['TAU'])
+        
+        # Return Metrics
+        metrics = dict()
+        if self.steps % 5000 == 0:
+            data = self.memory.replay()
+            q1,_ = self.critic(data.state[(data.initial).type(torch.BoolTensor)], data.action[(data.initial).type(torch.BoolTensor)])
+            metrics['value'] = q1.mean().item()
+        # if len(next_state) > 0:
+        #     next_action = self.actor(next_state)
+        #     q1, q2 = self.critic(next_state, next_action)
+        #     metrics['value'] = torch.min(q1,q2).mean().item()
+        # metrics['entropy'] = self.actor.entropy(batch.state).sum().item()
+        return metrics

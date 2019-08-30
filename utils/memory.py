@@ -53,8 +53,11 @@ class Memory():
         
         return self._transition(state, action, reward, next_state, mask, initial)
 
-    def replay(self):
-        transitions = self._buffer[:]
+    def replay(self, n=None):
+        if n is None:
+            transitions = self._buffer[:]
+        else:
+            transitions = self._buffer[self._next_idx-n : self._next_idx]
         state = torch.from_numpy(transitions['state']).float().to(self._device) 
         action = torch.from_numpy(transitions['action']).float().to(self._device)
         reward = torch.from_numpy(transitions['reward']).float().to(self._device)

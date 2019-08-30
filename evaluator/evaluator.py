@@ -44,7 +44,7 @@ class Evaluator():
             self.save_returns(output_filename)
             # self.save_actions(output_filename)
             self.save_metrics(output_filename)
-        self.save_video(output_filename)
+            self.save_video(output_filename)
         
     def save_video(self, path):
         done = True
@@ -52,7 +52,7 @@ class Evaluator():
         for t in range(1000):
             if done:
                 state = self.alg.env.reset()
-            state, reward, done = self._step(state)
+            state, reward, done = self.alg.act(state, deterministic=True)
             frames.append(self.alg.env.render(mode='rgb_array'))
         fig = plt.figure()
         im = []

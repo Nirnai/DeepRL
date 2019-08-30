@@ -72,33 +72,37 @@ from evaluator.plot import plot_dataset, compare_datasets, plot_action
 # compare_datasets(data, goal=-250, show=False)
 
 # # Time limit test
-data = ['data/trpo/valueMultiOptim/lambda095/TRPO_Pendulum-v0_returns.npz',
-        'data/trpo/valueSingleOptim/TRPO_Pendulum-v0_returns.npz'
-        ]
+# data = ['data/trpo/valueMultiOptim/lambda095/TRPO_Pendulum-v0_returns.npz',
+#         'data/trpo/valueSingleOptim/TRPO_Pendulum-v0_returns.npz'
+#         ]
 
-compare_datasets(data, goal=-250, show=False)
-plt.ylim([-1500, 100])
+# compare_datasets(data, goal=-250, show=False)
+# plt.ylim([-1500, 100])
 
-data = ['data/trpo/valueMultiOptim/lambda095/TRPO_Pendulum-v0_value.npz',
-        'data/trpo/valueSingleOptim/TRPO_Pendulum-v0_value.npz'
-        ]
+# data = ['data/trpo/valueMultiOptim/lambda095/TRPO_Pendulum-v0_value.npz',
+#         'data/trpo/valueSingleOptim/TRPO_Pendulum-v0_value.npz'
+#         ]
 
-compare_datasets(data, goal=-250, show=False)
-plt.ylim([-1500,100])
+# compare_datasets(data, goal=-250, show=False)
+# plt.ylim([-1500,100])
 # data = ['data/sac/SAC_CartpoleSwingup-v0_returns.npz',
-#         'data/trpo/TRPO_CartpoleSwingup-v0_returns.npz'
+#         'data/SAC_CartpoleSwingup-v0_returns.npz'
 #         ]
 
 # compare_datasets(data, goal=1000, show=False)
 
-# data = 'data/sac/SAC_CartpoleSwingup-v0_returns.npz'
-# plot_dataset(data, goal=1000, show=False, statistic='normal')
-
-data = 'data/TRPO_CartpoleSwingup-v0_returns.npz'
+data = 'data/TD3_CartpoleSwingup-v0_returns.npz'
 plot_dataset(data, goal=1000, show=False, statistic='normal')
 
-data = 'data/TRPO_CartpoleSwingup-v0_value.npz'
-plot_dataset(data, goal=1000, show=False, statistic='normal')
+
+data = 'data/TD3_CartpoleSwingup-v0_value.npz'
+plot_dataset(data, goal=1000, show=False)#, statistic='normal')
+
+# data = 'data/SAC_CartpoleSwingup-v0_returns.npz'
+# plot_dataset(data, goal=1000, show=False)#, statistic='normal')
+
+# data = 'data/TRPO_CartpoleSwingup-v0_value.npz'
+# plot_dataset(data, goal=1000, show=False)#, statistic='normal')
 
 
 
