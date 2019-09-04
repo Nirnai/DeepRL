@@ -25,13 +25,16 @@ if __name__ == '__main__':
     # env = gym.make('InvertedPendulumSwingupPyBulletEnv-v0')
     # env = gym.make('PendulumSwingup-v0')
     env = gym.make('CartpoleSwingup-v0')
+    # env = gym.make('CartpoleBalance-v0')
+    # env = gym.make('WalkerWalk-v0')
+    # env = gym.make('HumanoidWalk-v0')
 
     ########## Algorithm ###########
     # alg = TRPO(env)
     # alg = PPO(env)
     # alg = SAC(env)
-    # alg = CGP(env)
-    alg = TD3(env)
+    alg = CGP(env)
+    # alg = TD3(env)
 
     # ########### Evaluation ###########
     evl = Evaluator(alg, total_timesteps=1e6)

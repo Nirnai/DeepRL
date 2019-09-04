@@ -91,12 +91,19 @@ from evaluator.plot import plot_dataset, compare_datasets, plot_action
 
 # compare_datasets(data, goal=1000, show=False)
 
-data = 'data/TD3_CartpoleSwingup-v0_returns.npz'
-plot_dataset(data, goal=1000, show=False, statistic='normal')
+# data = 'data/TD3_CartpoleSwingup-v0_returns.npz'
+# plot_dataset(data, goal=1000, show=False, statistic='normal')
 
 
-data = 'data/TD3_CartpoleSwingup-v0_value.npz'
+# data = 'data/TD3_CartpoleSwingup-v0_value.npz'
+# plot_dataset(data, goal=1000, show=False)#, statistic='normal')
+
+data = 'data/CGP_CartpoleSwingup-v0_returns.npz'
 plot_dataset(data, goal=1000, show=False)#, statistic='normal')
+
+
+# data = 'data/CGP_CartpoleSwingup-v0_value.npz'
+# plot_dataset(data, goal=1000, show=False)#, statistic='normal')
 
 # data = 'data/SAC_CartpoleSwingup-v0_returns.npz'
 # plot_dataset(data, goal=1000, show=False)#, statistic='normal')

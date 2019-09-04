@@ -17,7 +17,7 @@ class TD3(BaseRL, OffPolicy):
         self.steps = 0                    
 
     
-    def act(self, state, deterministic=False):
+    def act(self, state, deterministic=True):
        ######################################
         initial = False
         # if self.env.last_u is None:
@@ -30,7 +30,8 @@ class TD3(BaseRL, OffPolicy):
         if deterministic is False:
             if self.param.POLICY_EXPLORATION_NOISE != 0:
                 action += torch.randn(action.shape).to(self.device) * self.param.POLICY_EXPLORATION_NOISE 
-                action = torch.clamp(action, self.env.action_space.low.item(), self.env.action_space.high.item()).cpu().numpy()
+                action = action.cpu().numpy()
+                action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
         next_state, reward, done, _ = self.env.step(action) 
         self.memory.push(state, action, reward, next_state, done, initial)
         self.steps += 1
@@ -51,7 +52,7 @@ class TD3(BaseRL, OffPolicy):
         # Update Critic
         with torch.no_grad():
             q1_next, q2_next = self.critic.target(batch.next_state, next_action)
-            q_target = batch.reward + self.param.GAMMA * batch.mask * torch.min(q1_next, q2_next)
+            q_target = batch.reward + self.param.GAMMA * torch.min(q1_next, q2_next)
         q1, q2 = self.critic(batch.state, batch.action)
         critic_loss = F.mse_loss(q1, q_target) + F.mse_loss(q2, q_target)
         self.critic.optimize(critic_loss)

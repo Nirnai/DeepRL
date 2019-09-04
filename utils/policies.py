@@ -141,6 +141,7 @@ class CrossEntropyGuidedPolicy(nn.Module):
             p = dist.Normal(mean, std)
             states = torch.cat(self.batch*[state.unsqueeze(0)], dim=0)
             actions = p.sample((self.batch,))
+            # actions = torch.tanh(actions)
             with torch.no_grad():
                 Qs, _ = self.q_function(states, actions)
             Is = Qs.topk(self.topk , dim=0)[1]

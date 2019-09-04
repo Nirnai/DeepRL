@@ -24,7 +24,7 @@ class DeepMindControlSuiteWrapper(gym.core.Env):
 
     def step(self, action):
         self.timestep = self.env.step(action)
-        next_state = np.concatenate(list(self.timestep.observation.values()))
+        next_state = np.concatenate([np.expand_dims(ob,axis=0) if ob.ndim is 0 else ob for ob in list(self.timestep.observation.values())])
         reward = self.timestep.reward
         done = self.timestep.last()
         return next_state, reward, done, {}
@@ -32,7 +32,7 @@ class DeepMindControlSuiteWrapper(gym.core.Env):
 
     def reset(self):
         self.timestep = self.env.reset()
-        return np.concatenate(list(self.timestep.observation.values()))
+        return np.concatenate([np.expand_dims(ob,axis=0) if ob.ndim is 0 else ob for ob in list(self.timestep.observation.values())])
 
 
 

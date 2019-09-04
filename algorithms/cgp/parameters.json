@@ -1,5 +1,5 @@
 {
-    "value" : {
+    "qvalue" : {
         "ARCHITECTURE" : [
             64,
             64
@@ -15,6 +15,8 @@
     },
     "MEMORY_SIZE": 1e6,
     "BATCH_SIZE": 64,
-    "UPDATE_STEPS": 1,
-    "GAMMA": 0.99
+    "UPDATE_STEPS": 5,
+    "GAMMA": 0.99,
+    "POLICY_EXPLORATION_NOISE":0,
+    "POLICY_CLIP": 0
 }
