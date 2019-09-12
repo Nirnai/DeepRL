@@ -38,7 +38,7 @@ class Evaluator():
         rng = np.random.RandomState(seed) #np.random.seed(seed)
         for i in range(samples):
             seeds.append(rng.randint(0,100))
-            self._seed(seeds[i])
+            # self._seed(seeds[i])
             self.reset()
             self._train(eval_mode=mode)
             self.save_returns(output_filename)
@@ -175,7 +175,8 @@ class Evaluator():
     
 
     def _seed(self, seed):
-        self.alg.env.seed(seed)
-        self.alg.seed(seed)
+        pass
+        # self.alg.env.seed(seed)
+        # self.alg.seed(seed)
 
 

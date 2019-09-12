@@ -23,7 +23,8 @@ class TRPO(BaseRL, OnPolicy):
         if self.env.timestep.step_type == 0:
             initial = True
         ######################################
-        action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy()
+        with torch.no_grad():
+            action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy()
         next_state, reward, done, _ = self.env.step(action)
         self.memory.push(state, action, reward, next_state, done, initial) 
         self.steps += 1
@@ -33,20 +34,21 @@ class TRPO(BaseRL, OnPolicy):
     @OnPolicy.loop
     def learn(self):
         rollouts = self.onPolicyData
-        # Compute Advantages
-        for i in range(self.param.VALUE_EPOCHS):
-            advantages = self.gae(rollouts) 
-            # Update Critic
-            critic_loss = advantages.pow(2).mean()
-            self.critic.optimize(critic_loss)
-        # Update Actor
-        for i in range(self.param.POLICY_EPOCHS):
-            advantages = self.gae(rollouts) 
-            advantages = (advantages - advantages.mean()) / advantages.std()
-            pg = self.policy_gradient(advantages, rollouts)
-            npg = self.natural_gradient(pg, rollouts)
-            parameters = self.linesearch(npg, pg, rollouts)
-            self.optimize_actor(parameters)
+        for _ in range(self.param.EPOCHS):
+            # Compute Advantages
+            for i in range(self.param.VALUE_EPOCHS):
+                advantages = self.gae(rollouts) 
+                # Update Critic
+                critic_loss = advantages.pow(2).mean()
+                self.critic.optimize(critic_loss)
+            # Update Actor
+            for i in range(self.param.POLICY_EPOCHS):
+                advantages = self.gae(rollouts) 
+                advantages = (advantages - advantages.mean()) / advantages.std()
+                pg = self.policy_gradient(advantages, rollouts)
+                npg = self.natural_gradient(pg, rollouts)
+                parameters = self.linesearch(npg, pg, rollouts)
+                self.optimize_actor(parameters)
 
         metrics = dict()
         # metrics['loss'] = critic_loss.item()

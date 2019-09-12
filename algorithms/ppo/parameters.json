@@ -15,7 +15,7 @@
         "ACTIVATION" : "Tanh",
         "LEARNING_RATE": 1e-2
     },
-    "BATCH_SIZE": 5000,
+    "BATCH_SIZE": 4000,
     "EPOCHS": 4,
     "GAMMA" : 0.99,
     "LAMBDA" : 0.95,

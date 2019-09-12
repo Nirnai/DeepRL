@@ -18,6 +18,7 @@ class Memory():
                                  ('initial', np.int64)]
         self._buffer = np.zeros(self._max_size, dtype = self._transition_type)
         self._len = 0
+        self._curr_idx = 0
         self._next_idx = 0
         
     
@@ -38,6 +39,7 @@ class Memory():
         self._buffer[self._next_idx] = (state, action, np.array([reward]), next_state, 1-done, initial)
         if self._len < self._max_size:
             self._len += 1
+        self._curr_idx = self._next_idx
         self._next_idx = (self._next_idx + 1) % self._max_size
 
     def sample(self, batch_size):
@@ -55,7 +57,10 @@ class Memory():
 
     def replay(self, n=None):
         if n is None:
-            transitions = self._buffer[:]
+            if(self._len < self._max_size):
+                transitions = self._buffer[:self._next_idx]
+            else:
+                transitions = self._buffer[:]
         else:
             transitions = self._buffer[self._next_idx-n : self._next_idx]
         state = torch.from_numpy(transitions['state']).float().to(self._device) 

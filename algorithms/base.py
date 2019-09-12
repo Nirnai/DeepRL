@@ -42,8 +42,9 @@ class BaseRL(metaclass=ABCMeta):
         return HyperParameter(parameters_file)
 
     def seed(self, seed):
-        torch.manual_seed(seed)
-        self.rng.seed(seed)
+        pass
+        # torch.manual_seed(seed)
+        # self.rng.seed(seed)
 
     def reset(self):
         self.__init__(self.env)

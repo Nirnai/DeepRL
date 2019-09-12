@@ -141,20 +141,22 @@ class CrossEntropyGuidedPolicy(nn.Module):
             p = dist.Normal(mean, std)
             states = torch.cat(self.batch*[state.unsqueeze(0)], dim=0)
             actions = p.sample((self.batch,))
-            # actions = torch.tanh(actions)
+            actions = torch.tanh(actions)
             with torch.no_grad():
                 Qs, _ = self.q_function(states, actions)
             Is = Qs.topk(self.topk , dim=0)[1]
             if Is.dim() == 2:
-                mean = torch.cat([torch.index_select(a, 0, i).unsqueeze(0) for a, i in zip(actions, Is)]).mean(dim = 0)
-                std = torch.cat([torch.index_select(a, 0, i).unsqueeze(0) for a, i in zip(actions, Is)]).std(dim = 0)
-                best_action = torch.cat([torch.index_select(a, 0, i).unsqueeze(0) for a, i in zip(actions, Is)])[0]
+                # Is = Is.unsqueeze(-1)
+                # actions_topk = actions.gather(0,Is)
+                actions_topk = torch.cat([actions[Is[:,i],i,:].unsqueeze(1) for i in torch.arange(Is.shape[1])], dim=1)
+                mean = actions_topk.mean(dim=0)
+                std = actions_topk.std(dim=0)
+                best_action = actions_topk[0]
             else:
                 mean = actions[Is].mean(dim = 0)
                 std = actions[Is].std(dim = 0)
                 best_action = actions[Is[0]]
         return best_action
-
 
 
 class EpsilonGreedyPolicy():

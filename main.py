@@ -30,10 +30,10 @@ if __name__ == '__main__':
     # env = gym.make('HumanoidWalk-v0')
 
     ########## Algorithm ###########
-    # alg = TRPO(env)
+    alg = TRPO(env)
     # alg = PPO(env)
     # alg = SAC(env)
-    alg = CGP(env)
+    # alg = CGP(env)
     # alg = TD3(env)
 
     # ########### Evaluation ###########
