@@ -6,7 +6,8 @@
         ],
         "ACTIVATION" : "Tanh",
         "LEARNING_RATE": 1e-3,
-        "TAU": 0.005
+        "TAU": 0.005,
+        "NUM_TARGETS": 20
     },
     "policy" : {
         "CEM_ITERATIONS": 2,

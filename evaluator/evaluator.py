@@ -1,77 +1,191 @@
 import os
 import time
+import gym
 import numpy as np
-import torch.multiprocessing as mp
 from copy import deepcopy
-from itertools import count
-# from plot import plot_dataset
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 
 class Evaluator():
-    def __init__(self, algorithm, total_timesteps=1e6, eval_timesteps=1000, averaging_window=20):
+    def __init__(self, algorithm, outdir):
         self.alg = algorithm
+        self.eval_alg = deepcopy(self.alg)
         self.param = algorithm.param
-        self._alg_name = algorithm.name
-        self._env_name = algorithm.env.spec.id
+        self.alg_name = algorithm.name
+        self.env_name = algorithm.env.spec.id
+        self.out_dir = outdir
         # Parameters
-        self._total_timesteps = int(total_timesteps)
-        self._eval_timesteps = int(eval_timesteps)
-        self._window = averaging_window
-        self._desired_average_return = algorithm.env.spec.reward_threshold
-        self._log_interval = 1
+        self.total_timesteps = int(self.param.evaluation['total_timesteps'])
+        self.eval_timesteps = int(self.param.evaluation['eval_timesteps'])
+        self.eval_episodes = int(self.param.evaluation['eval_episodes'])
+        self.window = int(self.param.evaluation['avaraging_window'])
+        self.desired_average_return = algorithm.env.spec.reward_threshold
+        self.log_interval = 1
         # Metrics
-        self._curr_episode = 0
-        self._returns = [0.0]
-        self._average_returns = []
-        self._metrics = dict()
-        self._actions = []
+        self.curr_episode = 0
+        self.returns = [0.0]
+        self.average_returns_online = []
+        self.average_returns_offline = []
+        self.deviation_returns_offline = []
+        self.final_returns = []
+        self.final_deviation = []
+        self.robust_returns = []
+        self.robust_deviation = []
+        self.metrics = dict()
+        self.actions = []
         # Checks
-        self._solved = False
+        self.solved = False
 
 
-    def evaluate(self, output, samples=10, seed=100, mode='online'):
-        if not os.path.isdir(output):  
-            os.mkdir(output)
-        output_filename = "{}/{}_{}".format(output, self._alg_name, self._env_name)
+    def run_statistic(self, samples=10, seed=100):
         seeds = []
-        rng = np.random.RandomState(seed) #np.random.seed(seed)
+        rng = np.random.RandomState(seed)
         for i in range(samples):
             seeds.append(rng.randint(0,100))
-            # self._seed(seeds[i])
             self.reset()
-            self._train(eval_mode=mode)
-            self.save_returns(output_filename)
-            # self.save_actions(output_filename)
-            self.save_metrics(output_filename)
-            self.save_video(output_filename)
-        
-    def save_video(self, path):
+            self.run()
+
+    def run(self):
         done = True
-        frames = []
-        for t in range(1000):
+        for t in range(self.total_timesteps):
             if done:
                 state = self.alg.env.reset()
-            state, reward, done = self.alg.act(state, deterministic=True)
-            frames.append(self.alg.env.render(mode='rgb_array'))
-        fig = plt.figure()
-        im = []
-        for frame in frames:
-            im.append([plt.imshow(frame)])
-        ani = animation.ArtistAnimation(fig, im, interval=10, blit=True, repeat_delay=1000)
-        ani.save('{}.mp4'.format(path))
-        
+            # Act
+            state, reward, done = self.alg.act(state)
+            # Learn
+            metrics = self.alg.learn()
+            # Collect Metrics
+            self.log_metrics(metrics)
+            # Collect Returns
+            self.log_reward(reward, done)
+            # Evaluate 
+            self.eval_progress()
+            # Print Info
+            if done and self.curr_episode % self.log_interval == 0:
+                self.print_progress()
+        self.eval_policy()
+        self.eval_robustness()
+        # Save Data
+        if not os.path.isdir(self.out_dir):  
+            os.mkdir(self.out_dir)
+        output_filename = "{}/{}_{}".format(self.out_dir, self.alg_name, self.env_name)
+        self.save_returns(output_filename)
+        self.save_metrics(output_filename)
+        self.save_video(output_filename, disturbance=False)
+        self.save_video(output_filename, disturbance=True)
+
+    
+    ################################################################
+    ########################## Utilities ###########################
+    ################################################################
+
+    def log_reward(self, reward, done):
+        if done:
+            self.curr_episode += 1
+            self.returns.append(0.0)
+            self.average_returns_online.append(np.mean(self.returns[-self.window:-1]))
+        else:
+            self.returns[-1] += reward
+
+    def log_metrics(self, metrics):
+        if type(metrics) is dict:
+            for key, value in metrics.items():
+                if value is not None:
+                    if key in self.metrics:
+                        self.metrics[key].append(value)
+                    else:
+                        self.metrics[key] = [value]
+
+    def eval_progress(self):
+        if self.alg.steps % self.eval_timesteps == 0:
+            self.eval_alg.actor.load_state_dict(self.alg.actor.state_dict())
+            returns = []
+            for episode in range(self.eval_episodes):
+                state = self.eval_alg.env.reset()
+                r = 0
+                while True:
+                    state, reward, done = self.eval_alg.act(state, deterministic=True)
+                    r += reward
+                    if done:
+                        break
+                returns.append(r)
+            self.average_returns_offline.append(np.mean(returns)) 
+            self.deviation_returns_offline.append(np.std(returns))             
+
+
+    def eval_policy(self):
+        self.eval_alg.actor.load_state_dict(self.alg.actor.state_dict())
+        returns = []
+        for episode in range(self.eval_episodes):
+            state = self.eval_alg.env.reset()
+            r = 0
+            while True:
+                state, reward, done = self.eval_alg.act(state, deterministic=True)
+                r += reward
+                if done:
+                    break
+            returns.append(r)
+        self.final_returns.append(np.mean(returns)) 
+        self.final_deviation.append(np.std(returns))   
+
+
+    def eval_robustness(self):
+        high = np.ones(2) * self.param.evaluation['max_external_force']
+        low = -high
+        dist_space = gym.spaces.Box(low, high)
+        self.eval_alg.actor.load_state_dict(self.alg.actor.state_dict())
+        returns = []
+        for episode in range(self.eval_episodes):
+            state = self.eval_alg.env.reset()
+            r = 0
+            while True:
+                ## Disturbance ##
+                dist = dist_space.sample()
+                self.eval_alg.env.env.physics.data.xfrc_applied[2][0] = dist[0]
+                self.eval_alg.env.env.physics.data.xfrc_applied[2][2] = dist[1]
+                #################
+                state, reward, done = self.eval_alg.act(state, deterministic=True)
+                r += reward
+                if done:
+                    break
+            returns.append(r)
+        self.robust_returns.append(np.mean(returns)) 
+        self.robust_deviation.append(np.std(returns))   
 
     def save_returns(self, path):
-        returns_file = '{}_returns.npz'.format(path)
-        samples = []
-        if os.path.isfile(returns_file):
-            samples = [array for array in np.load(returns_file).values()]
-        samples.append(self._average_returns)
-        np.savez(returns_file[:-4], *samples)
+        returns_file_online = '{}_returns_online.npz'.format(path)
+        returns_file_offline = '{}_returns_offline.npz'.format(path)
+        deviation_file_offline = '{}_deviation_offline.npz'.format(path)
+        finalreturns_file = '{}_final_returns.npz'.format(path)
+        finaldeviation_file = '{}_final_deviation.npz'.format(path)
+        robustreturns_file = '{}_robust_returns.npz'.format(path)
+        robustdeviation_file = '{}_robust_deviation.npz'.format(path)
+
+        returns_files = [returns_file_online, 
+                         returns_file_offline, 
+                         deviation_file_offline, 
+                         finalreturns_file, 
+                         finaldeviation_file,
+                         robustreturns_file,
+                         robustdeviation_file]
+
+        returns = [self.average_returns_online, 
+                   self.average_returns_offline, 
+                   self.deviation_returns_offline, 
+                   self.final_returns,
+                   self.final_deviation,
+                   self.robust_returns,
+                   self.robust_deviation]
+
+        for fil, ret in zip(returns_files, returns):
+            samples = []
+            if os.path.isfile(fil):
+                samples = [array for array in np.load(fil).values()]
+            samples.append(ret)
+            np.savez(fil[:-4], *samples)
     
     def save_metrics(self, path):
-        for key, values in self._metrics.items():
+        for key, values in self.metrics.items():
             key.replace(" ", "")                
             filename = '{}_{}.npz'.format(path, key)
             samples = []
@@ -80,101 +194,55 @@ class Evaluator():
             samples.append(values)
             np.savez(filename[:-4], *samples)
     
-    def save_actions(self, path):
-        actions_file = '{}_actions.npz'.format(path)
-        samples = []
-        if os.path.isfile(actions_file):
-            samples = [array for array in np.load(actions_file).values()]
-        samples.append(self._actions)
-        np.savez(actions_file[:-4], *samples)
-
-    def reset(self):
-        self._curr_episode = 0
-        self._returns = [0.0]
-        self._average_returns = []
-        self._metrics = dict()
-        self._actions = []
-        self._solved = False
-        self.alg.reset()
-
-    def _train(self, eval_mode='online'):
+    def save_video(self, path, disturbance=False):
         done = True
-        for t in range(self._total_timesteps):
+        frames = []
+        if disturbance:
+            path += '_robust'
+            high = np.ones(2) * self.param.evaluation['max_external_force']
+            low = -high
+            dist_space = gym.spaces.Box(low, high)
+        for t in range(1000):
             if done:
                 state = self.alg.env.reset()
-            state, reward, done = self._step(state)
-            if eval_mode is 'online':
-                self._eval_online(reward, done)
-            elif eval_mode is 'offline':
-                self._eval_offline()
-            else: 
-                NotImplementedError
-            if done and self._curr_episode % self._log_interval == 0:
-                self._print_progress()
-                
-
-    def _step(self, state):
-        # Act
-        state, reward, done = self.alg.act(state)
-        # Learn
-        metrics = self.alg.learn()
-        # Collect Metrics
-        self._log_metrics(metrics)
-        # Return
-        return state, reward, done
-            
-
-    def _eval_online(self, reward, done):
-        self._log_reward(reward, done)
-        if done:
-            self._average_returns.append(np.mean(self._returns[-self._window:-1]))
-
-    def _eval_offline(self):
-        if self.alg.steps % self._eval_timesteps == 0:
-            eval_alg = deepcopy(self.alg)
-            state = eval_alg.env.reset()
-            while True:
-                state, reward, done = eval_alg.act(state, exploit=True)
-                self._log_reward(reward, done)
-                if(self._curr_episode == self._window):
-                    self._average_returns.append(np.mean(self._returns))
-                    self._returns = [0.0]
-                    self._curr_episode = 0
-                    break
+            if disturbance:
+                # Disturbance ##
+                dist = dist_space.sample()
+                self.alg.env.env.physics.data.xfrc_applied[2][0] = dist[0]
+                self.alg.env.env.physics.data.xfrc_applied[2][2] = dist[1]
+                #################
+            state, reward, done = self.alg.act(state, deterministic=True)
+            frames.append(self.alg.env.render(mode='rgb_array'))
+        fig = plt.figure()
+        im = []
+        for frame in frames:
+            im.append([plt.imshow(frame)])
+        ani = animation.ArtistAnimation(fig, im, interval=10, blit=True, repeat_delay=1000)
+        ani.save('{}.mp4'.format(path))
 
 
-    def _log_reward(self, reward, done):
-        if done:
-            self._curr_episode += 1
-            self._returns.append(0.0)
-        else:
-            self._returns[-1] += reward
-
-    def _log_metrics(self, metrics):
-        if type(metrics) is dict:
-            for key, value in metrics.items():
-                if value is not None:
-                    if key in self._metrics:
-                        self._metrics[key].append(value)
-                    else:
-                        self._metrics[key] = [value]
-    
-    def _log_action(self, action):
-        self._actions.append(action)
+    def reset(self):
+        self.curr_episode = 0
+        self.returns = [0.0]
+        self.average_returns_online = []
+        self.average_returns_offline = []
+        self.metrics = dict()
+        self.actions = []
+        self.solved = False
+        self.alg.reset()
 
 
-
-    def _print_progress(self):
+    def print_progress(self):
         print("Steps: {:,}".format(self.alg.steps))
-        print("Episode: {:.2f}".format(self._curr_episode))
-        print("Average Return: {:.2f}".format(self._average_returns[-1]))
-        print("Goal Average Return: {}".format(self._desired_average_return))
-        for key, value in self._metrics.items():
-            print("{}: {:.2f}".format(key, self._metrics[key][-1]))
+        print("Episode: {:.2f}".format(self.curr_episode))
+        print("Average Return: {:.2f}".format(self.average_returns_online[-1]))
+        print("Goal Average Return: {}".format(self.desired_average_return))
+        for key, value in self.metrics.items():
+            print("{}: {:.2f}".format(key, self.metrics[key][-1]))
         print("------------------------------------")
     
 
-    def _seed(self, seed):
+    def seed(self, seed):
         pass
         # self.alg.env.seed(seed)
         # self.alg.seed(seed)

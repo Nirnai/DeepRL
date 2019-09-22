@@ -1,5 +1,6 @@
 import gym 
 import envs
+import numpy as np
 from algorithms import PPO, TRPO, SAC, CGP, TD3
 from evaluator import Evaluator, plot_dataset
 
@@ -8,13 +9,21 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-env = gym.make('PendulumSwingup-v0')
+
+high = np.ones(2) * 100
+low = -high
+dist_space = gym.spaces.Box(low, high)
+
+
+env = gym.make('CartpoleSwingup-v0')
+# env = gym.make('InvertedPendulum-v2')
 env.reset()
 
-frames = []
 for t in range(1000):
     env.render()
-    observation, reward, done, info = env.step(env.action_space.sample()) # take a random action
+    action = env.action_space.sample()
+    env.env.physics.data.xfrc_applied[2][0] = 5.
+    observation, reward, done, info = env.step(0) # take a random action
 env.close()
 
 
@@ -22,12 +31,12 @@ env.close()
 
 # Writer = animation.writers['ffmpeg']
 # writer = Writer(fps=10, metadata=dict(artist='Me'), bitrate=1800)
-fig = plt.figure()
-im = []
-for frame in frames:
-    im.append([plt.imshow(frame)])
-ani = animation.ArtistAnimation(fig, im, interval=10, blit=True, repeat_delay=1000)
-ani.save('dynamic_images.mp4')
+# fig = plt.figure()
+# im = []
+# for frame in frames:
+#     im.append([plt.imshow(frame)])
+# ani = animation.ArtistAnimation(fig, im, interval=10, blit=True, repeat_delay=1000)
+# ani.save('dynamic_images.mp4')
 # plt.show()
 
 # import numpy as np

@@ -5,19 +5,29 @@
             64
         ],
         "ACTIVATION" : "Tanh",
-        "LEARNING_RATE": 1e-1
+        "LEARNING_RATE": 1e-3
     },
     "policy" : {
         "ARCHITECTURE" : [
-            64,
-            64
+            256,
+            256
         ],
         "ACTIVATION" : "Tanh",
-        "LEARNING_RATE": 1e-2
+        "LEARNING_RATE": 3e-4
     },
-    "BATCH_SIZE": 4000,
-    "EPOCHS": 4,
+    "BATCH_SIZE": 5000,
+    "EPOCHS": 1,
+    "VALUE_EPOCHS": 80,
+    "POLICY_EPOCHS": 80,   
     "GAMMA" : 0.99,
     "LAMBDA" : 0.95,
-    "CLIP" : 0.2
+    "CLIP" : 0.2,
+    "TAU": 0.02,
+    "evaluation": {
+        "total_timesteps" : 1e6,
+        "eval_timesteps" : 5000,
+        "eval_episodes" : 10,
+        "avaraging_window" : 20,
+        "max_external_force": 1
+    }
 }

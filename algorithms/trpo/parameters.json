@@ -15,7 +15,7 @@
         "ACTIVATION" : "Tanh",
         "LEARNING_RATE": 0
     },
-    "BATCH_SIZE": 4000,
+    "BATCH_SIZE": 5000,
     "GAMMA" : 0.99,
     "LAMBDA" : 0.95,
     "DELTA" : 0.01, 
@@ -24,6 +24,5 @@
     "NUM_CG_ITER": 10,
     "CG_DAMPING": 0.1,
     "EPOCHS": 1,
-    "POLICY_EPOCHS": 1,
-    "VALUE_EPOCHS": 10
+    "VALUE_EPOCHS": 80
 } 

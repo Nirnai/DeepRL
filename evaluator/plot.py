@@ -11,6 +11,15 @@ def load_dataset(path):
     else:
         raise FileNotFoundError
 
+def plot(path, x=None):
+    data = load_dataset(path)
+    plt.figure()
+    for sample in data:
+        if x is None:
+            plt.plot(sample)
+        else:
+            plt.plot(x,sample)
+
 def plot_dataset(path, total_steps=1e6, goal=0 ,statistic=None, show=True):
     data = load_dataset(path)
     episodes = range(len(data[0]))

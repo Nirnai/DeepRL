@@ -1,6 +1,7 @@
 import gym
 import matplotlib.pyplot as plt
-from evaluator.plot import plot_dataset, compare_datasets, plot_action
+import numpy as np
+from evaluator.plot import plot_dataset, compare_datasets, plot_action, plot, load_dataset
 
 # ## SAC, TD3, CGP
 # data = ['data/benchmark/SAC_Pendulum-v0_returns.npz',
@@ -84,18 +85,25 @@ from evaluator.plot import plot_dataset, compare_datasets, plot_action
 
 # compare_datasets(data, goal=-250, show=False)
 # plt.ylim([-1500,100])
-data = ['data/trpo/TRPO_CartpoleSwingup-v0_returns.npz',
-        'data/TRPO_CartpoleSwingup-v0_returns.npz'
-        ]
+# data = ['data/ppo/maxEntropyRL/PPO_PendulumSwingup-v0_returns.npz',
+#         'data/ppo/PPO_PendulumSwingup-v0_returns.npz'
+#         ]
 
-compare_datasets(data, goal=1000, show=False)
+# compare_datasets(data, goal=1000, show=False)
 
-# data = 'data/TD3_CartpoleSwingup-v0_returns.npz'
+# data = 'data/ppo/PPO_CartpoleSwingup-v0_returns.npz'
 # plot_dataset(data, goal=1000, show=False, statistic='normal')
 
 
-# data = 'data/TRPO_CartpoleSwingup-v0_returns.npz'
+# data = 'data/SAC_CartpoleSwingup-v0_returns.npz'
 # plot_dataset(data, goal=1000, show=False, statistic='normal')
+
+# data = 'data/PPO_PendulumSwingup-v0_returns.npz'
+# plot_dataset(data, goal=1000, show=False)#, statistic='normal')
+
+# data = 'data/PPO_CartpoleSwingup-v0_returns.npz'
+# plot_dataset(data, goal=1000, show=False)#, statistic='normal')
+
 
 # data = 'data/CGP_CartpoleSwingup-v0_returns.npz'
 # plot_dataset(data, goal=1000, show=False)#, statistic='normal')
@@ -103,7 +111,7 @@ compare_datasets(data, goal=1000, show=False)
 # data = 'data/CGP_CartpoleSwingup-v0_value.npz'
 # plot_dataset(data, goal=1000, show=False)#, statistic='normal')
 
-# data = 'data/CGP_CartpoleSwingup-v0_value.npz'
+# data = 'data/CGP_CartpoleSwingup-v0_returns.npz'
 # plot_dataset(data, goal=1000, show=False)#, statistic='normal')
 
 # data = 'data/SAC_CartpoleSwingup-v0_returns.npz'
@@ -112,7 +120,36 @@ compare_datasets(data, goal=1000, show=False)
 # data = 'data/TRPO_CartpoleSwingup-v0_value.npz'
 # plot_dataset(data, goal=1000, show=False)#, statistic='normal')
 
+# mean = 'data/PPO_CartpoleSwingup-v0_final_returns.npz'
+# std = 'data/PPO_CartpoleSwingup-v0_final_deviation.npz'
+# mean = load_dataset(mean)
+# std = load_dataset(std)
+# print(mean)
+# print(std)
 
+# mean = 'data/PPO_CartpoleSwingup-v0_robust_returns.npz'
+# std = 'data/PPO_CartpoleSwingup-v0_robust_deviation.npz'
+# mean = load_dataset(mean)
+# std = load_dataset(std)
+# print(mean)
+# print(std)
+
+data1 = 'data/PPO_CartpoleSwingup-v0_returns_online.npz'
+data2 = 'data/PPO_CartpoleSwingup-v0_returns_offline.npz'
+
+plot(data1)
+plot(data2, x=np.linspace(0,1000,200))
+
+
+plot_dataset(data1, goal=1000, show=False, statistic='normal')
+plot_dataset(data2, goal=1000, show=False, statistic='normal')
+
+# data = ['data/ppo/Cartpole/benchmark/PPO_CartpoleSwingup-v0_returns_offline.npz',
+#         'data/ppo/Cartpole/hidden128/PPO_CartpoleSwingup-v0_returns_offline.npz',
+#         'data/ppo/Cartpole/hidden256/PPO_CartpoleSwingup-v0_returns_offline.npz'
+#         ]
+
+# compare_datasets(data, goal=1000, show=False)
 
 plt.show()
 
