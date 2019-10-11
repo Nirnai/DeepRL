@@ -16,7 +16,6 @@ from evaluator import Evaluator, plot_dataset
 # from evaluation import Evaluation
 
 if __name__ == '__main__':
-
     ########## Environment ###########
     # env = gym.make('CartPole-v1')
     # env = gym.make('Pendulum-v0')
@@ -26,7 +25,6 @@ if __name__ == '__main__':
     # env = gym.make('InvertedPendulumSwingupPyBulletEnv-v0')
     # env = gym.make('PendulumSwingup-v0')
     env = gym.make('CartpoleSwingup-v0')
-    # env = gym.make('FetchPickAndPlace-v1')
     # env = gym.make('CartpoleBalance-v0')
     # env = gym.make('WalkerWalk-v0')
     # env = gym.make('HumanoidWalk-v0')
@@ -34,8 +32,8 @@ if __name__ == '__main__':
     ########## Algorithm ###########
     # alg = TRPO(env)
     # alg = PPO(env)
-    # alg = SAC(env)
-    alg = CGP(env)
+    alg = SAC(env)
+    # alg = CGP(env)
     # alg = TD3(env)    
 
     # ########### Evaluation ###########

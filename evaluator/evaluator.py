@@ -1,4 +1,5 @@
 import os
+import shutil
 import time
 import gym
 import numpy as np
@@ -8,13 +9,13 @@ import matplotlib.pyplot as plt
 from itertools import count
 
 class Evaluator():
-    def __init__(self, algorithm, outdir):
+    def __init__(self, algorithm, path):
         self.alg = algorithm
         self.eval_alg = deepcopy(self.alg)
         self.param = algorithm.param
         self.alg_name = algorithm.name
         self.env_name = algorithm.env.spec.id
-        self.out_dir = outdir
+        self.out_dir = self.create_output_dir(path)
         # Parameters
         self.total_timesteps = int(self.param.evaluation['total_timesteps'])
         self.eval_timesteps = int(self.param.evaluation['eval_timesteps'])
@@ -33,8 +34,8 @@ class Evaluator():
         self.robust_returns = []
         self.robust_deviation = []
         self.metrics = dict()
-        # Checks
-        self.solved = False
+        # Counter
+        self.sample = 0
 
 
     def run_statistic(self, samples=10, seed=100):
@@ -42,8 +43,13 @@ class Evaluator():
         rng = np.random.RandomState(seed)
         for i in range(samples):
             seeds.append(rng.randint(0,100))
+            self.sample = i
             self.reset()
             self.run()
+            # Save Data
+            self.save_policy()
+            self.save_returns()
+            self.save_metrics()
 
     def run(self):
         done = True
@@ -63,17 +69,6 @@ class Evaluator():
             # Print Info
             if done and self.curr_episode % self.log_interval == 0:
                 self.print_progress()
-        self.eval_policy()
-        # self.eval_robustness()
-        # Save Data
-        if not os.path.isdir(self.out_dir):  
-            os.mkdir(self.out_dir)
-        output_filename = "{}/{}_{}".format(self.out_dir, self.alg_name, self.env_name)
-        self.save_returns(output_filename)
-        self.save_metrics(output_filename)
-        self.save_video(output_filename, disturbance=False)
-        # self.save_video(output_filename, disturbance=True)
-
     
     ################################################################
     ########################## Utilities ###########################
@@ -154,30 +149,38 @@ class Evaluator():
         self.robust_returns.append(np.mean(returns)) 
         self.robust_deviation.append(np.std(returns))   
 
-    def save_returns(self, path):
-        returns_file_online = '{}_returns_online.npz'.format(path)
-        returns_file_offline = '{}_returns_offline.npz'.format(path)
-        deviation_file_offline = '{}_deviation_offline.npz'.format(path)
-        finalreturns_file = '{}_final_returns.npz'.format(path)
-        finaldeviation_file = '{}_final_deviation.npz'.format(path)
-        robustreturns_file = '{}_robust_returns.npz'.format(path)
-        robustdeviation_file = '{}_robust_deviation.npz'.format(path)
+    ## Saving
+    def create_output_dir(self, base):
+        timestr = time.strftime("%Y-%m-%d_%H-%M")
+        dir_name = self.alg_name + '_' + self.env_name + '_' + timestr
+        directory = base + '/' + dir_name
+        if not os.path.isdir(directory):  
+            os.makedirs(directory, exist_ok=True)
+        return directory
+    
+    def save_policy(self):
+        self.alg.save_model(self.out_dir)
+        path = self.out_dir + '/policies'
+        if not os.path.isdir(path):  
+            os.mkdir(path)
+        shutil.copyfile(self.out_dir + '/actor_model.pt', path + '/actor_model_{}.pt'.format(self.sample))
+
+    def save_returns(self):
+        returns_file_online = '{}/returns_online.npz'.format(self.out_dir)
+        returns_file_offline = '{}/returns_offline.npz'.format(self.out_dir)
+        deviation_file_offline = '{}/deviation_offline.npz'.format(self.out_dir)
+        # finalreturns_file = '{}/final_returns.npz'.format(self.out_dir)
+        # finaldeviation_file = '{}/final_deviation.npz'.format(self.out_dir)
+        # robustreturns_file = '{}/robust_returns.npz'.format(self.out_dir)
+        # robustdeviation_file = '{}/robust_deviation.npz'.format(self.out_dir)
 
         returns_files = [returns_file_online, 
                          returns_file_offline, 
-                         deviation_file_offline, 
-                         finalreturns_file, 
-                         finaldeviation_file,
-                         robustreturns_file,
-                         robustdeviation_file]
+                         deviation_file_offline]
 
         returns = [self.average_returns_online, 
                    self.average_returns_offline, 
-                   self.deviation_returns_offline, 
-                   self.final_returns,
-                   self.final_deviation,
-                   self.robust_returns,
-                   self.robust_deviation]
+                   self.deviation_returns_offline]
 
         for fil, ret in zip(returns_files, returns):
             samples = []
@@ -186,24 +189,26 @@ class Evaluator():
             samples.append(ret)
             np.savez(fil[:-4], *samples)
     
-    def save_metrics(self, path):
+    def save_metrics(self):
         for key, values in self.metrics.items():
             key.replace(" ", "")                
-            filename = '{}_{}.npz'.format(path, key)
+            filename = '{}/{}.npz'.format(self.out_dir, key)
             samples = []
             if os.path.isfile(filename):
                 samples = [array for array in np.load(filename).values()]
             samples.append(values)
             np.savez(filename[:-4], *samples)
     
-    def save_video(self, path, disturbance=False):
+    def save_video(self, disturbance=False):
         done = True
         frames = []
         if disturbance:
-            path += '_robust'
+            path = self.out_dir + '/video_robust'
             high = np.ones(2) * self.param.evaluation['max_external_force']
             low = -high
             dist_space = gym.spaces.Box(low, high)
+        else:
+            path = self.out_dir +'/video'
         for t in range(1000):
             if done:
                 state = self.alg.env.reset()

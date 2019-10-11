@@ -16,9 +16,11 @@ class BaseRL(metaclass=ABCMeta):
         self.env = env
         self.device = torch.device(device)
         self.rng = np.random.RandomState(0)
+        self.actor = None
+        self.critic = None
         self.state_dim, self.action_dim = getEnvInfo(env)
         self.param = self.load_parameters()
-        models = ['value', 'qvalue', 'policy']
+        models = ['value', 'qvalue', 'policy']        
         for model in models: 
             if(hasattr(self.param, model)):
                 attr = getattr(self.param, model)
@@ -40,6 +42,15 @@ class BaseRL(metaclass=ABCMeta):
     def load_parameters(self):
         parameters_file = os.path.dirname(inspect.getfile(self.__class__)) + '/parameters.json'
         return HyperParameter(parameters_file)
+
+    def save_model(self, path):
+        path += '/actor_model.pt'
+        torch.save(self.actor.state_dict(), path)
+
+    def load_model(self, path):
+        path += '/actor_model.pt'
+        self.actor.load_state_dict(torch.load(path))
+        
 
     def seed(self, seed):
         pass
