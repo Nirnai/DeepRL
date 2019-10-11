@@ -4,21 +4,39 @@
             64,
             64
         ],
+        "INIT_HIDDEN": "default",
+        "INIT_OUTPUT": "default",
         "ACTIVATION" : "Tanh",
         "LEARNING_RATE": 1e-3,
-        "TAU": 0.005,
-        "NUM_TARGETS": 20
+        "TAU": 0.005
     },
     "policy" : {
+        "ARCHITECTURE" : [
+            64,
+            64
+        ],
+        "INIT_HIDDEN": "default",
+        "INIT_OUTPUT": "default",
+        "ACTIVATION" : "Tanh",
+        "LEARNING_RATE": 1e-3,
         "CEM_ITERATIONS": 2,
         "CEM_BATCH": 64,
         "CEM_TOPK": 6
     },
     "MEMORY_SIZE": 1e6,
     "BATCH_SIZE": 128,
-    "UPDATE_STEPS": 5,
+    "UPDATE_STEPS": 1,
     "GAMMA": 0.99,
     "POLICY_EXPLORATION_NOISE": 0,
     "POLICY_UPDATE_NOISE":0.2,
-    "POLICY_CLIP": 0.5
+    "POLICY_CLIP": 0.5,
+    "POLICY_UPDATE_FREQ" : 2,
+    "evaluation": {
+        "avaraging_window": 20,
+        "disturbance_intervall": 10,
+        "eval_episodes": 10,
+        "eval_timesteps": 5000,
+        "max_external_force": 1,
+        "total_timesteps": 1000000.0
+    }
 }

@@ -14,6 +14,7 @@ class DeepMindControlSuiteWrapper(gym.core.Env):
         self.observation_space = gym.spaces.Box(-np.inf, np.inf, shape=(self.observation_dim,))
         self.action_spec = self.env.action_spec()
         self.action_space = gym.spaces.Box( self.action_spec.minimum,  self.action_spec.maximum)
+        self._max_episode_steps = self.env._step_limit
 
         self.timestep = None
 
@@ -56,3 +57,32 @@ class DeepMindControlSuiteWrapper(gym.core.Env):
 
 
             
+class NormalizeWrapper(gym.Wrapper):
+    def __init__(self, env):
+        super().__init__(env)
+        self.env = env
+        self._max_episode_steps = self.env._max_episode_steps
+        self.n = 0
+        self.state_mean = np.zeros(env.observation_space.shape[0], dtype=np.float32)
+        self.state_var = np.ones(env.observation_space.shape[0], dtype=np.float32)
+
+    def step(self, action):
+        next_state, reward, done, info = self.env.step(action)
+        self.update_statistic(next_state)
+        next_state = self.normalize(next_state)
+        return next_state, reward, done, info
+
+    def reset(self):
+        state = self.env.reset()
+        self.update_statistic(state)
+        return self.normalize(state)
+
+    def update_statistic(self, state):
+        self.n += 1
+        delta1 = (state - self.state_mean)
+        self.state_mean += delta1/self.n
+        delta2 = (state - self.state_mean) 
+        self.state_var += (delta1 * delta2)/self.n
+
+    def normalize(self, state):
+        return (state - self.state_mean)/(self.state_var + 1e-5)

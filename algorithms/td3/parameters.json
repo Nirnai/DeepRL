@@ -4,6 +4,8 @@
             64,
             64
         ],
+        "INIT_HIDDEN": "default",
+        "INIT_OUTPUT": "default",
         "ACTIVATION" : "Tanh",
         "LEARNING_RATE": 1e-3, 
         "TAU": 0.005
@@ -13,6 +15,8 @@
             64,
             64
         ],
+        "INIT_HIDDEN": "default",
+        "INIT_OUTPUT": "default",
         "ACTIVATION" : "Tanh",
         "LEARNING_RATE": 1e-3,
         "TAU": 0.005

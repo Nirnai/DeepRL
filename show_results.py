@@ -1,124 +1,8 @@
+import os
 import gym
 import matplotlib.pyplot as plt
 import numpy as np
-from evaluator.plot import plot_dataset, compare_datasets, plot_action, plot, load_dataset
-
-# ## SAC, TD3, CGP
-# data = ['data/benchmark/SAC_Pendulum-v0_returns.npz',
-#         'data/benchmark/TD3_Pendulum-v0_returns.npz',
-#         'data/benchmark/CGP_Pendulum-v0_returns.npz']
-# fig1 = compare_datasets(data, goal=-250, show=False)
-# fig1.suptitle('SAC vs TD3 vs CGP')
-
-# ## SAC, TRPO, PPO
-# data = ['data/benchmark/TRPO_Pendulum-v0_returns.npz',
-#         'data/benchmark/PPO_Pendulum-v0_returns.npz',
-#         'data/benchmark/SAC_Pendulum-v0_returns_long.npz',
-#         'data/benchmark/CGP_Pendulum-v0_returns_long.npz']
-# fig2 = compare_datasets(data, goal=-250, show=False)
-# fig2.suptitle('TRPO vs PPO vs SAC')
-
-# ## Evaluation: Online vs. Offline
-# data = ['data/ppo/online/PPO_Pendulum-v0_returns.npz',
-#         'data/ppo/offline/PPO_Pendulum-v0_returns.npz']
-# fig3 = compare_datasets(data, goal=-250, show=False)
-# fig3.suptitle('PPO Online vs Offline')
-
-# data = ['data/trpo/online/TRPO_Pendulum-v0_returns.npz',
-#         'data/trpo/offline/TRPO_Pendulum-v0_returns.npz']
-# fig4 = compare_datasets(data, goal=-250, show=False)
-# fig4.suptitle('TRPO Online vs Offline')
-
-
-
-# ## Normalization vs Non-Normalized
-# data = ['data/ppo/online/PPO_Pendulum-v0_returns.npz',
-#         'data/ppo/normalized/PPO_Pendulum-v0_returns.npz']
-# fig5 = compare_datasets(data, goal=-250, show=False)
-# fig5.suptitle('PPO Normalization vs Non-Normalized')
-
-# data = ['data/trpo/online/TRPO_Pendulum-v0_returns.npz',
-#         'data/trpo/normalized/TRPO_Pendulum-v0_returns.npz']
-# fig6 = compare_datasets(data, goal=-250, show=False)
-# fig6.suptitle('TRPO Normalization vs Non-Normalized')
-
-# ## Q-Function: Underestimation vs Overestimation (only SAC, TD3, CGP)
-
-
-
-## Action Smoothness
-# env = gym.make('InvertedPendulumSwingupPyBulletEnv-v0')
-# data1 = 'data/TRPO_InvertedPendulumSwingupPyBulletEnv-v0_actions.npz'
-# data2 = 'data/SAC_InvertedPendulumSwingupPyBulletEnv-v0_actions.npz'
-# data3 = 'data/TRPO_Pendulum-v0_actions.npz'
-# # plot_action(data1, env)
-# plot_action(data2, env)
-
-# Benchmark
-
-# data = ['data/fromServer/TRPO_Pendulum-v0.npz',
-#         'data/fromServer/PPO_Pendulum-v0.npz',
-#         'data/fromServer/SAC_Pendulum-v0.npz',
-#         'data/fromServer/TD3_Pendulum-v0.npz',
-#         'data/fromServer/CGP_Pendulum-v0.npz']
-
-# compare_datasets(data, goal=-250, show=False)
-
-# # 1, 2 and 5 steps
-# data = ['data/fromServer/OffPolicylargerBatches/SAC_Pendulum-v0_1-steps.npz',
-#         'data/fromServer/OffPolicylargerBatches/SAC_Pendulum-v0_2-steps.npz',
-#         'data/fromServer/OffPolicylargerBatches/SAC_Pendulum-v0_5-steps.npz']
-
-# compare_datasets(data, goal=-250, show=False)
-
-# # Time limit test
-# data = ['data/trpo/valueMultiOptim/lambda095/TRPO_Pendulum-v0_returns.npz',
-#         'data/trpo/valueSingleOptim/TRPO_Pendulum-v0_returns.npz'
-#         ]
-
-# compare_datasets(data, goal=-250, show=False)
-# plt.ylim([-1500, 100])
-
-# data = ['data/trpo/valueMultiOptim/lambda095/TRPO_Pendulum-v0_value.npz',
-#         'data/trpo/valueSingleOptim/TRPO_Pendulum-v0_value.npz'
-#         ]
-
-# compare_datasets(data, goal=-250, show=False)
-# plt.ylim([-1500,100])
-# data = ['data/ppo/maxEntropyRL/PPO_PendulumSwingup-v0_returns.npz',
-#         'data/ppo/PPO_PendulumSwingup-v0_returns.npz'
-#         ]
-
-# compare_datasets(data, goal=1000, show=False)
-
-# data = 'data/ppo/PPO_CartpoleSwingup-v0_returns.npz'
-# plot_dataset(data, goal=1000, show=False, statistic='normal')
-
-
-# data = 'data/SAC_CartpoleSwingup-v0_returns.npz'
-# plot_dataset(data, goal=1000, show=False, statistic='normal')
-
-# data = 'data/PPO_PendulumSwingup-v0_returns.npz'
-# plot_dataset(data, goal=1000, show=False)#, statistic='normal')
-
-# data = 'data/PPO_CartpoleSwingup-v0_returns.npz'
-# plot_dataset(data, goal=1000, show=False)#, statistic='normal')
-
-
-# data = 'data/CGP_CartpoleSwingup-v0_returns.npz'
-# plot_dataset(data, goal=1000, show=False)#, statistic='normal')
-
-# data = 'data/CGP_CartpoleSwingup-v0_value.npz'
-# plot_dataset(data, goal=1000, show=False)#, statistic='normal')
-
-# data = 'data/CGP_CartpoleSwingup-v0_returns.npz'
-# plot_dataset(data, goal=1000, show=False)#, statistic='normal')
-
-# data = 'data/SAC_CartpoleSwingup-v0_returns.npz'
-# plot_dataset(data, goal=1000, show=False)#, statistic='normal')
-
-# data = 'data/TRPO_CartpoleSwingup-v0_value.npz'
-# plot_dataset(data, goal=1000, show=False)#, statistic='normal')
+from evaluator.plot import plot_dataset, compare_datasets, plot, load_dataset, plot_offline, plot_final_performance
 
 # mean = 'data/PPO_CartpoleSwingup-v0_final_returns.npz'
 # std = 'data/PPO_CartpoleSwingup-v0_final_deviation.npz'
@@ -134,22 +18,128 @@ from evaluator.plot import plot_dataset, compare_datasets, plot_action, plot, lo
 # print(mean)
 # print(std)
 
-data1 = 'data/PPO_CartpoleSwingup-v0_returns_online.npz'
-data2 = 'data/PPO_CartpoleSwingup-v0_returns_offline.npz'
+# mean_files = [ 'data/ppo/Cartpole/policyNetwork/hidden8/PPO_CartpoleSwingup-v0_final_returns.npz',
+#                'data/ppo/Cartpole/policyNetwork/hidden16/PPO_CartpoleSwingup-v0_final_returns.npz',
+#                'data/ppo/Cartpole/policyNetwork/hidden32/PPO_CartpoleSwingup-v0_final_returns.npz',
+#                'data/ppo/Cartpole/policyNetwork/hidden64/PPO_CartpoleSwingup-v0_final_returns.npz',
+#                'data/ppo/Cartpole/policyNetwork/hidden128/PPO_CartpoleSwingup-v0_final_returns.npz',
+#                'data/ppo/Cartpole/policyNetwork/hidden256/PPO_CartpoleSwingup-v0_final_returns.npz'
+#                ]
 
-plot(data1)
-plot(data2, x=np.linspace(0,1000,200))
+# std_files = ['data/ppo/Cartpole/policyNetwork/hidden8/PPO_CartpoleSwingup-v0_final_deviation.npz',
+#              'data/ppo/Cartpole/policyNetwork/hidden16/PPO_CartpoleSwingup-v0_final_deviation.npz',
+#              'data/ppo/Cartpole/policyNetwork/hidden32/PPO_CartpoleSwingup-v0_final_deviation.npz',
+#              'data/ppo/Cartpole/policyNetwork/hidden64/PPO_CartpoleSwingup-v0_final_deviation.npz',
+#              'data/ppo/Cartpole/policyNetwork/hidden128/PPO_CartpoleSwingup-v0_final_deviation.npz',
+#              'data/ppo/Cartpole/policyNetwork/hidden256/PPO_CartpoleSwingup-v0_final_deviation.npz'
+#              ]
+
+# x = ['8','16','32','64','128','256']
+# means = []
+# stds = []
+# n = 10
+# for mean, std in zip(mean_files, std_files):
+#         mu = load_dataset(mean)
+#         sigma = load_dataset(std)
+#         n_total = len(mu) * n
+#         new_mean =  n/n_total * np.sum(mu[-1])
+#         new_sigma = np.sqrt(n/n_total * (np.sum(sigma[-1]**2) + np.sum((mu[-1] - new_mean)**2)))
+#         means.append(new_mean)
+#         stds.append(new_sigma)      
+
+# fig, ax = plt.subplots()
+# ax.bar(x, means, yerr=stds, align='center', alpha=0.5, ecolor='black', capsize=10)
 
 
-plot_dataset(data1, goal=1000, show=False, statistic='normal')
-plot_dataset(data2, goal=1000, show=False, statistic='normal')
-
+# # Late Start
 # data = ['data/ppo/Cartpole/benchmark/PPO_CartpoleSwingup-v0_returns_offline.npz',
-#         'data/ppo/Cartpole/hidden128/PPO_CartpoleSwingup-v0_returns_offline.npz',
-#         'data/ppo/Cartpole/hidden256/PPO_CartpoleSwingup-v0_returns_offline.npz'
+#         'data/ppo/Cartpole/startFrom50000/PPO_CartpoleSwingup-v0_returns_offline.npz'
+# ]
+
+# compare_datasets(data, goal=1000, show=False)
+
+
+# data = ['data/ppo/Cartpole/policyNetwork/hidden8/PPO_CartpoleSwingup-v0_returns_offline.npz',
+#         'data/ppo/Cartpole/policyNetwork/hidden16/PPO_CartpoleSwingup-v0_returns_offline.npz',
+#         'data/ppo/Cartpole/policyNetwork/hidden32/PPO_CartpoleSwingup-v0_returns_offline.npz',
+#         'data/ppo/Cartpole/policyNetwork/hidden64/PPO_CartpoleSwingup-v0_returns_offline.npz',
+#         'data/ppo/Cartpole/policyNetwork/hidden128/PPO_CartpoleSwingup-v0_returns_offline.npz',
+#         'data/ppo/Cartpole/policyNetwork/hidden256/PPO_CartpoleSwingup-v0_returns_offline.npz',
 #         ]
 
 # compare_datasets(data, goal=1000, show=False)
+# data = [ 'data/ppo/Cartpole/policyNetwork/hidden32/PPO_CartpoleSwingup-v0_returns_online.npz',
+#          'data/PPO_CartpoleSwingup-v0_returns_online.npz'
+#         ]
+# compare_datasets(data, goal=1000, show=False)
+
+
+# data1 = 'data/ppo/CartpoleNewImpl/LRDecay/PPO_CartpoleSwingup-v0_returns_offline.npz'
+# data2 = 'data/ppo/CartpoleNewImpl/LRDecay+NormAdv/PPO_CartpoleSwingup-v0_returns_offline.npz'
+# data3 = 'data/ppo/CartpoleNewImpl/all/PPO_CartpoleSwingup-v0_returns_offline.npz'
+# data4 = 'data/ppo/CartpoleNewImpl/LRDecay+GradNormClip/PPO_CartpoleSwingup-v0_returns_offline.npz'
+# compare_datasets([data1, data2, data3, data4], goal=1,show=False)
+
+data1 = 'data/CGP_CartpoleSwingup-v0_returns_online.npz'
+data2 = 'data/cgp/CGP_CartpoleSwingup-v0_returns_online.npz'
+compare_datasets([data1, data2],goal=1000)
+mean = 'data/CGP_CartpoleSwingup-v0_final_returns.npz'
+std = 'data/CGP_CartpoleSwingup-v0_final_deviation.npz'
+x = [0]
+mu = load_dataset(mean)
+sigma = load_dataset(std)
+print(mu, sigma)
+# plot_dataset(data, goal=1000, show=False, statistic='normal')
+# plot_dataset(data1, goal=1000, show=False, statistic='normal')
+# plot_dataset(data3, goal=1000, show=False, statistic='normal')
+# plt.ylim([-1,1])
+# # plot_dataset(data2, goal=1000, show=False, statistic='normal')
+
+# returns = 'data/PPO_CartpoleSwingup-v0_returns_offline.npz'
+# deviations = 'data/PPO_CartpoleSwingup-v0_deviation_offline.npz'
+# plot_offline(returns, deviations, 10)
+
+# returns = ['data/PPO_CartpoleSwingup-v0_final_returns.npz',
+#            'data/ppo/Cartpole/startFrom50000/PPO_CartpoleSwingup-v0_final_returns.npz']
+# deviations = ['data/PPO_CartpoleSwingup-v0_final_deviation.npz',
+#               'data/ppo/Cartpole/startFrom50000/PPO_CartpoleSwingup-v0_final_deviation.npz']
+# plot_final_performance(returns, deviations, 10)
+
+
+# ## Analysing Network sweep
+# path =  [
+#         'data/value_architecture/trpo/4/TRPO_CartpoleSwingup-v0_explained_variance.npz',
+#         'data/value_architecture/trpo/8/TRPO_CartpoleSwingup-v0_explained_variance.npz',
+#         'data/value_architecture/trpo/16/TRPO_CartpoleSwingup-v0_explained_variance.npz',
+#         'data/value_architecture/trpo/32/TRPO_CartpoleSwingup-v0_explained_variance.npz',
+#         # 'data/value_architecture/trpo/64/TRPO_CartpoleSwingup-v0_explained_variance.npz',
+#         # 'data/value_architecture/trpo/128/TRPO_CartpoleSwingup-v0_explained_variance.npz',
+#         # 'data/value_architecture/trpo/256/TRPO_CartpoleSwingup-v0_explained_variance.npz'
+#         ]
+# compare_datasets(path, goal=1,show=False)
+
+
+# returns =   [
+#             'data/value_architecture/trpo/4/TRPO_CartpoleSwingup-v0_returns_offline.npz',
+#             'data/value_architecture/trpo/8/TRPO_CartpoleSwingup-v0_returns_offline.npz',
+#             'data/value_architecture/trpo/16/TRPO_CartpoleSwingup-v0_returns_offline.npz',
+#             'data/value_architecture/trpo/32/TRPO_CartpoleSwingup-v0_returns_offline.npz',
+#             'data/value_architecture/trpo/64/TRPO_CartpoleSwingup-v0_returns_offline.npz',
+#             'data/value_architecture/trpo/128/TRPO_CartpoleSwingup-v0_returns_offline.npz',
+#             'data/value_architecture/trpo/256/TRPO_CartpoleSwingup-v0_returns_offline.npz'
+#             ]
+
+# deviations =    [
+#                 'data/value_architecture/trpo/4/TRPO_CartpoleSwingup-v0_deviation_offline.npz',
+#                 'data/value_architecture/trpo/8/TRPO_CartpoleSwingup-v0_deviation_offline.npz',
+#                 'data/value_architecture/trpo/16/TRPO_CartpoleSwingup-v0_deviation_offline.npz',
+#                 'data/value_architecture/trpo/32/TRPO_CartpoleSwingup-v0_deviation_offline.npz',
+#                 'data/value_architecture/trpo/64/TRPO_CartpoleSwingup-v0_deviation_offline.npz',
+#                 'data/value_architecture/trpo/128/TRPO_CartpoleSwingup-v0_deviation_offline.npz',
+#                 'data/value_architecture/trpo/256/TRPO_CartpoleSwingup-v0_deviation_offline.npz'
+#                 ]
+# plot_offline(returns, deviations, 10)
+
 
 plt.show()
 

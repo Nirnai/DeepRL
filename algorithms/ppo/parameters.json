@@ -1,33 +1,47 @@
 {
-    "value" : {
-        "ARCHITECTURE" : [
+    "BATCH_SIZE": 2048,
+    "NUM_MINI_BATCHES": 64,
+    "CLIP": 0.2,
+    "MAX_KL_DIV": 0.01,
+    "ENTROPY_COEFFICIENT": 0.0,
+    "CLIPPED_VALUE": false,
+    "EARLY_STOPPING": false,
+    "LR_SCHEDULE": true,
+    "MAX_GRAD_NORM": 0.5,
+    "DELAYED_START": 0,
+    "EPOCHS": 10,
+    "GAMMA": 0.99,
+    "LAMBDA": 0.95,
+    "POLICY_EPOCHS": 1,
+    "TAU": 0.02,
+    "VALUE_EPOCHS": 1,
+    "evaluation": {
+        "avaraging_window": 20,
+        "disturbance_intervall": 10,
+        "eval_episodes": 10,
+        "eval_timesteps": 5000,
+        "max_external_force": 1,
+        "total_timesteps": 1000000.0
+    },
+    "policy": {
+        "ACTIVATION": "Tanh",
+        "ARCHITECTURE": [
             64,
             64
         ],
-        "ACTIVATION" : "Tanh",
-        "LEARNING_RATE": 1e-3
+        "INIT_HIDDEN": "default",
+        "INIT_OUTPUT": "default",
+        "LEARNING_RATE": 1e-3,
+        "WEIGHT_DECAY": 0.0
     },
-    "policy" : {
-        "ARCHITECTURE" : [
-            256,
-            256
+    "value": {
+        "ACTIVATION": "Tanh",
+        "ARCHITECTURE": [
+            64,
+            64
         ],
-        "ACTIVATION" : "Tanh",
-        "LEARNING_RATE": 3e-4
-    },
-    "BATCH_SIZE": 5000,
-    "EPOCHS": 1,
-    "VALUE_EPOCHS": 80,
-    "POLICY_EPOCHS": 80,   
-    "GAMMA" : 0.99,
-    "LAMBDA" : 0.95,
-    "CLIP" : 0.2,
-    "TAU": 0.02,
-    "evaluation": {
-        "total_timesteps" : 1e6,
-        "eval_timesteps" : 5000,
-        "eval_episodes" : 10,
-        "avaraging_window" : 20,
-        "max_external_force": 1
+        "INIT_HIDDEN": "default",
+        "INIT_OUTPUT": "default",
+        "LEARNING_RATE": 1e-3
     }
 }

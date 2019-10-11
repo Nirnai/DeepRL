@@ -62,7 +62,6 @@ class OnPolicy():
                 rollouts = self.memory.replay()
                 self.onPolicyData = rollouts
                 metrics = f(self)
-                # self.memory.clear()
             return metrics
         return wrap
 
@@ -86,8 +85,8 @@ class OffPolicy():
 
 class ActionValueFunction():
     def __init__(self, param, device):
-        self.Q1 = QValue(param, device)
-        self.Q2 = QValue(param, device)
+        self.Q1 = QValue(param, device, init_hidden=param['INIT_HIDDEN'], init_output=param['INIT_OUTPUT'])
+        self.Q2 = QValue(param, device, init_hidden=param['INIT_HIDDEN'], init_output=param['INIT_OUTPUT'])
         self.Q1_target = QValue(param, device)
         self.Q2_target = QValue(param, device)
         self.Q1_target.load_state_dict(self.Q1.state_dict())
@@ -99,7 +98,7 @@ class ActionValueFunction():
     
     def __call__(self, state, action):
         return self.Q1(state, action), self.Q2(state, action)
-    
+
     def target(self, state, action):
         return self.Q1_target(state, action), self.Q2_target(state, action)
 
@@ -116,44 +115,13 @@ class ActionValueFunction():
             target_param.data.copy_(self._tau * local_param.data + (1.0 - self._tau) * target_param.data)
 
 
-# class ActionValueFunction():
-#     def __init__(self, param, device):
-#         self.Q = QValue(param, device)
-#         self.targets = []
-#         for _ in range(param['NUM_TARGETS']):
-#             self.targets.append(QValue(param, device))
-#             self.targets[-1].load_state_dict(self.Q.state_dict())
-#             self.targets[-1].eval()
-#         self.Q_optim = optim.Adam(self.Q.parameters(), lr=param['LEARNING_RATE'])
-#         self._tau = param['TAU']
-#         self._num_targets = param['NUM_TARGETS']
-    
-#     def __call__(self, state, action):
-#         return self.Q(state, action)
-    
-#     def target(self, state, action):
-#         Q_target = torch.zeros(state.size()[0])
-#         for i in range(self._num_targets):
-#             Q_target += self.targets[i](state, action)
-#         return Q_target/self._num_targets
-
-#     def optimize(self, loss):
-#         self.Q_optim.zero_grad()
-#         loss.backward()
-#         self.Q_optim.step()
-#         self.target_update()
-    
-#     def target_update(self):
-#         taus = np.linspace(self._tau - self._tau/2, self._tau + self._tau/2, self._num_targets)
-#         for i, target in enumerate(self.targets):
-#             for target_param, local_param in zip(target.parameters(), self.Q.parameters()):
-#                 target_param.data.copy_(taus[i] * local_param.data + (1.0 - taus[i]) * target_param.data)
-
-
 class ValueFunction():   
     def __init__(self, param, device):
-        self.V = Value(param, device)
+        self.V = Value(param, device, init_hidden=param['INIT_HIDDEN'], init_output=param['INIT_OUTPUT'])
         self.V_optim = optim.Adam(self.V.parameters(), lr=param['LEARNING_RATE'])
+    
+    def parameters(self):
+        return self.V.parameters()
     
     def __call__(self, state):
         return self.V(state)

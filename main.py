@@ -1,5 +1,6 @@
 import gym 
 import envs
+from envs import NormalizeWrapper
 from algorithms import PPO, TRPO, SAC, CGP, TD3
 from evaluator import Evaluator, plot_dataset
 
@@ -25,15 +26,16 @@ if __name__ == '__main__':
     # env = gym.make('InvertedPendulumSwingupPyBulletEnv-v0')
     # env = gym.make('PendulumSwingup-v0')
     env = gym.make('CartpoleSwingup-v0')
+    # env = gym.make('FetchPickAndPlace-v1')
     # env = gym.make('CartpoleBalance-v0')
     # env = gym.make('WalkerWalk-v0')
     # env = gym.make('HumanoidWalk-v0')
 
     ########## Algorithm ###########
     # alg = TRPO(env)
-    alg = PPO(env)
+    # alg = PPO(env)
     # alg = SAC(env)
-    # alg = CGP(env)
+    alg = CGP(env)
     # alg = TD3(env)    
 
     # ########### Evaluation ###########

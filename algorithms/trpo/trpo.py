@@ -21,9 +21,10 @@ class TRPO(BaseRL, OnPolicy):
         with torch.no_grad():
             action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy()
         next_state, reward, done, _ = self.env.step(action)
-        self.memory.store(state, action, reward, next_state, done) 
-        if done:
-            self.memory.process_episode(self.critic, self.actor) 
+        if not deterministic:
+            self.memory.store(state, action, reward, next_state, done)
+            if done:
+                self.memory.process_episode(self.critic, self.actor, maximum_entropy=False) 
         self.steps += 1
         return next_state, reward, done
     
@@ -31,6 +32,7 @@ class TRPO(BaseRL, OnPolicy):
     @OnPolicy.loop
     def learn(self):
         rollouts = self.onPolicyData
+        # states = (rollouts['states']-rollouts['states_mean'])/rollouts['states_std']
         returns = rollouts['returns']
         advantages = rollouts['advantages']
         for _ in range(self.param.EPOCHS):
@@ -41,14 +43,20 @@ class TRPO(BaseRL, OnPolicy):
                 critic_loss = F.mse_loss(values, returns)
                 self.critic.optimize(critic_loss)
             # Update Actor
-            advantages = (advantages - advantages.mean()) / advantages.std()
+            # advantages = (advantages - advantages.mean()) / advantages.std()
             pg = self.policy_gradient(advantages, rollouts)
             npg = self.natural_gradient(pg, rollouts)
-            parameters = self.linesearch(npg, pg, rollouts)
+            parameters, stepsize = self.linesearch(npg, pg, rollouts)
             self.optimize_actor(parameters)
 
         metrics = dict()
-        metrics['value'] = values.mean().item()
+        with torch.no_grad():
+            metrics['value'] = values.mean().item()
+            metrics['target'] = returns.mean().item()
+            metrics['explained_variance'] = (1 - (returns - values).pow(2).sum()/(returns-returns.mean()).pow(2).sum()).item()
+            # metrics['entropy'] = self.actor.entropy(rollouts['states']).mean().item()
+            metrics['stepsize'] = stepsize.item()
+            # metrics['kl'] = total_kl.item()
         return metrics
 
     ################################################################
@@ -130,4 +138,4 @@ class TRPO(BaseRL, OnPolicy):
             if surr_loss >= 0 and kl_div <= self.param.DELTA:
                 params_curr = params_new
                 break
-        return params_curr
+        return params_curr, (self.param.ALPHA**k * npg).norm()

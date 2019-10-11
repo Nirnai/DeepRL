@@ -5,6 +5,7 @@ import numpy as np
 from copy import deepcopy
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
+from itertools import count
 
 class Evaluator():
     def __init__(self, algorithm, outdir):
@@ -32,7 +33,6 @@ class Evaluator():
         self.robust_returns = []
         self.robust_deviation = []
         self.metrics = dict()
-        self.actions = []
         # Checks
         self.solved = False
 
@@ -64,7 +64,7 @@ class Evaluator():
             if done and self.curr_episode % self.log_interval == 0:
                 self.print_progress()
         self.eval_policy()
-        self.eval_robustness()
+        # self.eval_robustness()
         # Save Data
         if not os.path.isdir(self.out_dir):  
             os.mkdir(self.out_dir)
@@ -72,7 +72,7 @@ class Evaluator():
         self.save_returns(output_filename)
         self.save_metrics(output_filename)
         self.save_video(output_filename, disturbance=False)
-        self.save_video(output_filename, disturbance=True)
+        # self.save_video(output_filename, disturbance=True)
 
     
     ################################################################
@@ -98,7 +98,7 @@ class Evaluator():
 
     def eval_progress(self):
         if self.alg.steps % self.eval_timesteps == 0:
-            self.eval_alg.actor.load_state_dict(self.alg.actor.state_dict())
+            self.eval_alg.actor = deepcopy(self.alg.actor)
             returns = []
             for episode in range(self.eval_episodes):
                 state = self.eval_alg.env.reset()
@@ -114,12 +114,13 @@ class Evaluator():
 
 
     def eval_policy(self):
-        self.eval_alg.actor.load_state_dict(self.alg.actor.state_dict())
+        # self.eval_alg.actor.load_state_dict(self.alg.actor.state_dict())
+        self.eval_alg.actor = deepcopy(self.alg.actor)
         returns = []
         for episode in range(self.eval_episodes):
             state = self.eval_alg.env.reset()
             r = 0
-            while True:
+            for t in count():
                 state, reward, done = self.eval_alg.act(state, deterministic=True)
                 r += reward
                 if done:
@@ -133,17 +134,18 @@ class Evaluator():
         high = np.ones(2) * self.param.evaluation['max_external_force']
         low = -high
         dist_space = gym.spaces.Box(low, high)
-        self.eval_alg.actor.load_state_dict(self.alg.actor.state_dict())
+        self.eval_alg.actor = deepcopy(self.alg.actor)
         returns = []
         for episode in range(self.eval_episodes):
             state = self.eval_alg.env.reset()
             r = 0
-            while True:
-                ## Disturbance ##
-                dist = dist_space.sample()
-                self.eval_alg.env.env.physics.data.xfrc_applied[2][0] = dist[0]
-                self.eval_alg.env.env.physics.data.xfrc_applied[2][2] = dist[1]
-                #################
+            for t in count():
+                if t%self.param.evaluation['disturbance_intervall'] == 0:
+                    ## Disturbance ##
+                    dist = dist_space.sample()
+                    self.eval_alg.env.env.physics.data.xfrc_applied[2][0] = dist[0]
+                    self.eval_alg.env.env.physics.data.xfrc_applied[2][2] = dist[1]
+                    #################
                 state, reward, done = self.eval_alg.act(state, deterministic=True)
                 r += reward
                 if done:
@@ -226,8 +228,12 @@ class Evaluator():
         self.returns = [0.0]
         self.average_returns_online = []
         self.average_returns_offline = []
+        self.deviation_returns_offline = []
+        self.final_returns = []
+        self.final_deviation = []
+        self.robust_returns = []
+        self.robust_deviation = []
         self.metrics = dict()
-        self.actions = []
         self.solved = False
         self.alg.reset()
 
@@ -238,7 +244,7 @@ class Evaluator():
         print("Average Return: {:.2f}".format(self.average_returns_online[-1]))
         print("Goal Average Return: {}".format(self.desired_average_return))
         for key, value in self.metrics.items():
-            print("{}: {:.2f}".format(key, self.metrics[key][-1]))
+            print("{}: {:.6f}".format(key, self.metrics[key][-1]))
         print("------------------------------------")
     
 

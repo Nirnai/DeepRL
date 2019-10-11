@@ -20,7 +20,7 @@ def plot(path, x=None):
         else:
             plt.plot(x,sample)
 
-def plot_dataset(path, total_steps=1e6, goal=0 ,statistic=None, show=True):
+def plot_dataset(path, total_steps=1e6, goal=0, statistic=None, show=True):
     data = load_dataset(path)
     episodes = range(len(data[0]))
     fig = plt.figure()
@@ -42,6 +42,39 @@ def plot_dataset(path, total_steps=1e6, goal=0 ,statistic=None, show=True):
         plt.show()
     return fig
 
+def plot_offline(path_returns, path_deviations, n):
+    fig = plt.figure()
+    for path_return, path_deviation in zip(path_returns, path_deviations):
+        means = load_dataset(path_return)
+        stds = load_dataset(path_deviation)
+        n_total = len(means) * n
+        new_mean = np.mean(means, axis=0)
+        new_std = np.sqrt(n/n_total * (np.sum(stds**2, axis=0) + np.sum((means - new_mean)**2, axis=0)))
+        new_se = new_std / np.sqrt(10)
+        episodes = np.linspace(0, 1000 , len(new_mean))
+        plt.plot(episodes, [1000] * len(episodes), 'k--', label = 'goal reward')
+        plt.plot(episodes, new_mean)
+        plt.fill_between(episodes, new_mean - new_std, new_mean + new_std, alpha=0.2)
+    # plt.fill_between(range(len(new_mean)),new_mean - 1.96 * new_se, new_mean + 1.96 * new_se, alpha=0.5)
+
+
+def plot_final_performance(paths_returns, paths_deviations, n):
+    x = []
+    means = []
+    stds = []
+    for path_returns, path_deviations in zip(paths_returns, paths_deviations):
+        label = path_returns.split('/')[-2]
+        mean = load_dataset(path_returns)
+        std = load_dataset(path_deviations)
+        n_total = len(mean) * n
+        new_mean =  n/n_total * np.sum(mean)
+        new_std = np.sqrt(n/n_total * (np.sum(std**2) + np.sum((mean - new_mean)**2)))
+        x.append(label)
+        means.append(new_mean)
+        stds.append(new_std)
+    fig, ax = plt.subplots()
+    ax.bar(x, means, yerr=stds, align='center', alpha=0.5, ecolor='black', capsize=10)
+
 
 def compare_datasets(paths, goal=0, show=True):
     fig = plt.figure()
@@ -54,7 +87,7 @@ def compare_datasets(paths, goal=0, show=True):
         else:
             exp_name = ''
         dataset = load_dataset(path)
-        episodes = range(len(dataset[0]))
+        episodes = np.linspace(0,1000,len(dataset[0])) #range(len(dataset[0]))
         mean, low, high = mean_confidance(dataset)
         plt.plot(episodes, mean, label='{} {}'.format(alg_name, exp_name))
         plt.fill_between(episodes, low, high, alpha=0.2)
@@ -68,19 +101,17 @@ def compare_datasets(paths, goal=0, show=True):
     return fig
 
 
-def plot_action(path, env ,statistic=None, show=True):
-    data = load_dataset(path)
-    steps = range(len(data[0]))
-    fig = plt.figure()
-    for sample in data:
-        plt.plot(steps, sample)
-    plt.plot(steps, [env.action_space.high] * len(steps), 'k--')
-    plt.plot(steps, [env.action_space.low] * len(steps), 'k--')
-    plt.xlabel('Steps')
-    plt.ylabel('Control')
-    if show:
-        plt.show()
-    return fig
+
+    ################################################################
+    ########################## Utilities ###########################
+    ################################################################
+
+    def combine_statistics(means, stds, n):
+        n_total = len(means) * n
+        new_mean = np.mean(means)
+        new_std = np.sqrt(n/n_total * (np.sum(stds**2) + np.sum((means - new_mean)**2)))
+        return new_mean, new_std
+        
 
 
 if __name__ == '__main__':

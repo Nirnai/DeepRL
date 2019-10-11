@@ -1,7 +1,7 @@
 import gym
 from gym.envs.registration import register
 from dm_control import suite
-from envs.wrapper import DeepMindControlSuiteWrapper
+from envs.wrapper import DeepMindControlSuiteWrapper, NormalizeWrapper
 
 for domain, task in suite.BENCHMARKING:
     register(

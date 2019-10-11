@@ -1,28 +1,37 @@
 {
-    "value" : {
-        "ARCHITECTURE" : [
-            64,
-            64
-        ],
-        "ACTIVATION" : "Tanh",
-        "LEARNING_RATE": 1e-3
+    "ALPHA": 0.8,
+    "BATCH_SIZE": 5000,
+    "CG_DAMPING": 0.1,
+    "DELTA": 0.01,
+    "EPOCHS": 1,
+    "GAMMA": 0.995,
+    "LAMBDA": 0.97,
+    "NUM_BACKTRACK": 10,
+    "NUM_CG_ITER": 10,
+    "TAU": 0.01,
+    "VALUE_EPOCHS": 80,
+    "evaluation": {
+        "avaraging_window": 20,
+        "disturbance_intervall": 10,
+        "eval_episodes": 10,
+        "eval_timesteps": 5000,
+        "max_external_force": 1,
+        "total_timesteps": 1e6
     },
-    "policy" : {
-        "ARCHITECTURE" : [
+    "policy": {
+        "ACTIVATION": "Tanh",
+        "ARCHITECTURE": [
             64,
             64
         ],
-        "ACTIVATION" : "Tanh",
         "LEARNING_RATE": 0
     },
-    "BATCH_SIZE": 5000,
-    "GAMMA" : 0.99,
-    "LAMBDA" : 0.95,
-    "DELTA" : 0.01, 
-    "ALPHA" : 0.8,
-    "NUM_BACKTRACK" : 10, 
-    "NUM_CG_ITER": 10,
-    "CG_DAMPING": 0.1,
-    "EPOCHS": 1,
-    "VALUE_EPOCHS": 80
-} 
+    "value": {
+        "ACTIVATION": "Tanh",
+        "ARCHITECTURE": [
+            64,
+            64
+        ],
+        "LEARNING_RATE": 0.001
+    }
+}

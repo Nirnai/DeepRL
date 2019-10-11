@@ -4,6 +4,7 @@ from scipy.signal import lfilter
 from collections import deque, namedtuple
 
 
+
 class Buffer():
     def __init__(self, capacity, gamma, lamda, tau, env, device):
         self.device = device
@@ -12,13 +13,21 @@ class Buffer():
         self.lamda = lamda
         self.tau = tau
 
+        # Transition Data   
         self.states = np.zeros((capacity, env.observation_space.shape[0]), dtype=np.float32)
         self.actions = np.zeros((capacity, env.action_space.shape[0]), dtype=np.float32)
         self.rewards = np.zeros(capacity, dtype=np.float32)
         self.next_states = np.zeros((capacity, env.observation_space.shape[0]), dtype=np.float32)
         self.dones = np.zeros(capacity, dtype=np.float32)
 
-        self.returns = np.zeros(capacity, dtype=np.float32)
+        # Predictor Data
+        self.values = np.zeros(capacity, dtype=np.float32)
+        self.next_values = np.zeros(capacity, dtype=np.float32)
+        self.log_probs = np.zeros(capacity, dtype=np.float32)
+
+        # On-policy specific
+        self.returns_mc = np.zeros(capacity, dtype=np.float32)
+        self.returns_gae = np.zeros(capacity, dtype=np.float32)
         self.advantages = np.zeros(capacity, dtype=np.float32)
 
         self.idx = 0
@@ -27,41 +36,51 @@ class Buffer():
     def __len__(self):
         return self.idx
     
-    def store(self, state, action, reward, next_state, done):
+    def store(self, state, action, reward, next_state, done, value, next_value, log_pi):
         assert self.idx < self.max_size
         self.states[self.idx] = state
         self.actions[self.idx] = action
         self.rewards[self.idx] = reward
         self.next_states[self.idx] = next_state
         self.dones[self.idx] = done
+        self.values[self.idx] = value
+        self.next_values[self.idx] = next_value
+        self.log_probs[self.idx] = log_pi
         self.idx += 1
+
     
-    def process_episode(self, critic, actor, maximum_entropy=False):
+    def process_episode(self, maximum_entropy=False, mc_returns=False):
         episode = slice(self.start_idx, self.idx)
-        states = np.concatenate([self.states[episode], self.next_states[self.idx-1:self.idx]], axis = 0)
         rewards = self.rewards[episode]
-        with torch.no_grad():
-            states = torch.from_numpy(states).to(self.device)
-            values = critic(states).cpu().numpy()
-            if maximum_entropy:
-                # Max Entropy RL
-                rewards += self.tau * actor.entropy(states[:-1]).squeeze().cpu().numpy()
-        deltas = rewards + self.gamma * values[1:] - values[:-1]
+        values = self.values[episode]
+        next_values = self.next_values[episode]
+        log_probs = self.log_probs[episode]
+        if maximum_entropy:
+            # Max Entropy RL
+            # rewards += self.tau * actor.entropy(states[:-1]).squeeze().cpu().numpy()
+            rewards -= self.tau * log_probs
+        deltas = rewards + self.gamma * next_values - values
         self.advantages[episode] = lfilter([1], [1, float(-self.gamma * self.lamda)], deltas[::-1], axis=0)[::-1]
-        self.returns[episode] = lfilter([1], [1, float(-self.gamma)], rewards[::-1], axis=0)[::-1]
+        self.returns_mc[episode] = lfilter([1], [1, float(-self.gamma)], rewards[::-1], axis=0)[::-1] 
+        self.returns_gae[episode] = self.advantages[episode] + values
         self.start_idx = self.idx
+
 
 
     def replay(self):
         assert self.idx == self.max_size
+        if(self.start_idx < self.idx):
+            self.process_episode()
         self.idx, self.start_idx = 0, 0
         return dict(
             states = torch.from_numpy(self.states).to(self.device),
             actions = torch.from_numpy(self.actions).to(self.device),
-            returns = torch.from_numpy(self.returns).to(self.device),
-            advantages = torch.from_numpy(self.advantages).to(self.device)
+            returns_mc = torch.from_numpy(self.returns_mc).to(self.device),
+            returns_gae = torch.from_numpy(self.returns_mc).to(self.device),
+            advantages = torch.from_numpy(self.advantages).to(self.device),
+            values = torch.from_numpy(self.values).to(self.device),
+            log_probs = torch.from_numpy(self.log_probs).to(self.device)
         )
-
 
 
 class ReplayBuffer():
@@ -69,6 +88,11 @@ class ReplayBuffer():
         self.rng = rng
         self.device = device
         self.max_size = int(capacity)
+
+        self.states_mean = np.zeros(env.observation_space.shape[0], dtype=np.float32)
+        self.states_std = np.zeros(env.observation_space.shape[0], dtype=np.float32)
+        self.rewards_mean = np.zeros(env.observation_space.shape[0], dtype=np.float32)
+        self.rewards_std = np.zeros(env.observation_space.shape[0], dtype=np.float32)
 
         self.states      = np.zeros((int(capacity), env.observation_space.shape[0]), dtype=np.float32)
         self.actions     = np.zeros((int(capacity), env.action_space.shape[0]), dtype=np.float32)
@@ -100,76 +124,4 @@ class ReplayBuffer():
             next_states = torch.from_numpy(self.next_states[idxs]).to(self.device),
             dones = torch.from_numpy(self.dones[idxs]).to(self.device)
         )
-
-
-# class Memory():
-#     def __init__(self, capacity, rng, env, device):
-#         self._rng = rng
-#         self._device = device
-#         self._max_size = int(capacity)
-
-#         self._transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'mask', 'initial'))
-#         self._transition_type = [('state', np.float64, env.observation_space.shape), 
-#                                  ('action', np.float64, env.action_space.shape),
-#                                  ('reward', np.float64),
-#                                  ('next_state', np.float64, env.observation_space.shape),
-#                                  ('mask', np.int64),
-#                                  ('initial', np.int64)]
-#         self._buffer = np.zeros(self._max_size, dtype = self._transition_type)
-#         self._len = 0
-#         self._curr_idx = 0
-#         self._next_idx = 0
-        
-    
-#     def __len__(self):
-#         # return len(self._buffer)
-#         return self._len
-
-#     def __getitem__(self, index):
-#         return self._buffer[index]
-    
-#     def clear(self): 
-#         # self.buffer.clear()
-#         self._buffer = np.zeros(self._max_size, dtype = self._transition_type)
-#         self._len = 0
-    
-#     def push(self, state, action, reward, next_state, done, initial):
-#         """Saves a transition."""
-#         self._buffer[self._next_idx] = (state, action, np.array([reward]), next_state, 1-done, initial)
-#         if self._len < self._max_size:
-#             self._len += 1
-#         self._curr_idx = self._next_idx
-#         self._next_idx = (self._next_idx + 1) % self._max_size
-
-#     def sample(self, batch_size):
-#         idxs = np.random.randint(0, self._len, batch_size)
-#         transitions = self._buffer[idxs]
-#         state = torch.from_numpy(transitions['state']).float().to(self._device) 
-#         action = torch.from_numpy(transitions['action']).float().to(self._device)
-#         reward = torch.from_numpy(transitions['reward']).float().to(self._device)
-#         next_state = torch.from_numpy(transitions['next_state']).float().to(self._device)
-#         mask = torch.from_numpy(transitions['mask']).float().to(self._device)
-        
-#         initial =  torch.from_numpy(transitions['initial']).float().to(self._device)
-        
-#         return self._transition(state, action, reward, next_state, mask, initial)
-
-#     def replay(self, n=None):
-#         if n is None:
-#             if(self._len < self._max_size):
-#                 transitions = self._buffer[:self._next_idx]
-#             else:
-#                 transitions = self._buffer[:]
-#         else:
-#             transitions = self._buffer[self._next_idx-n : self._next_idx]
-#         state = torch.from_numpy(transitions['state']).float().to(self._device) 
-#         action = torch.from_numpy(transitions['action']).float().to(self._device)
-#         reward = torch.from_numpy(transitions['reward']).float().to(self._device)
-#         next_state = torch.from_numpy(transitions['next_state']).float().to(self._device)
-#         mask = torch.from_numpy(transitions['mask']).float().to(self._device)
-
-#         initial =  torch.from_numpy(transitions['initial']).float().to(self._device)
-
-#         return self._transition(state, action, reward, next_state, mask, initial)
-
 

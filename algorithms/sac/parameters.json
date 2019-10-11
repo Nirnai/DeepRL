@@ -4,6 +4,8 @@
             64,
             64
         ],
+        "INIT_HIDDEN": "default",
+        "INIT_OUTPUT": "default",
         "ACTIVATION" : "Tanh",
         "LEARNING_RATE": 1e-3,
         "TAU": 0.005
@@ -13,12 +15,23 @@
             64,
             64
         ],
+        "INIT_HIDDEN": "dafault",
+        "INIT_OUTPUT": "default",
         "ACTIVATION" : "Tanh",
         "LEARNING_RATE": 1e-3
     },
+    "POLICY_UPDATE_FREQ" : 2,
     "MEMORY_SIZE": 1e6,
     "BATCH_SIZE": 128,
     "UPDATE_STEPS": 5,
     "GAMMA" : 0.99,
-    "ALPHA": 0.2
+    "ALPHA": 0.2,
+    "evaluation": {
+        "avaraging_window": 20,
+        "disturbance_intervall": 10,
+        "eval_episodes": 10,
+        "eval_timesteps": 5000,
+        "max_external_force": 1,
+        "total_timesteps": 1000000.0
+    }
 }

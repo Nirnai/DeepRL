@@ -3,11 +3,6 @@ import numpy as np
 from gym import spaces
 from collections import OrderedDict
 
-def getEnvInfo(env):
-    state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.shape[0]
-    return state_dim, action_dim
-
 class VecEnv(ABC):
     """
     An abstract asynchronous, vectorized environment.
@@ -82,11 +77,11 @@ class DummyVecEnv(VecEnv):
 #        self.envs = [fn() for fn in env_fns]
         self.envs = env_fns
         env = self.envs[0]
+        self.spec = env.spec
         VecEnv.__init__(self, len(env_fns), env.observation_space, env.action_space)
         shapes, dtypes = {}, {}
         self.keys = []
         obs_space = env.observation_space
-
         if isinstance(obs_space, spaces.Dict):
             assert isinstance(obs_space.spaces, OrderedDict)
             subspaces = obs_space.spaces
@@ -140,20 +135,3 @@ class DummyVecEnv(VecEnv):
             return self.buf_obs[None]
         else:
             return self.buf_obs
-
-
-
-if __name__ == '__main__':
-    import gym
-
-    nenv = 16
-    envs = []
-    for i in range(nenv):
-        e = gym.make('Pendulum-v0')
-        e.seed(0 + 1000*i)  #for repeatability
-        envs.append(e)
-    envs = DummyVecEnv(envs)
-    obs = envs.reset()
-    actions = np.ones((16,1), dtype=np.float32)
-    obs, rews, dones, _ = envs.step(actions)
-
