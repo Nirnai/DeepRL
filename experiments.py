@@ -5,6 +5,24 @@ from algorithms import PPO, TRPO, SAC, CGP, TD3
 from evaluator import Evaluator, plot_dataset
 from algorithms import HyperParameter
 
+def ppo_experiments(env):
+    env = gym.make('CartpoleSwingup-v0')
+    state_dim, action_dim = getEnvInfo(env)
+
+    param = HyperParameter(path='algorithms/ppo/parameters.json')
+    models = ['value', 'qvalue', 'policy']        
+    for model in models: 
+        if(hasattr(param, model)):
+            attr = getattr(param, model)
+            attr['STATE_DIM'] = state_dim
+            attr['ACTION_DIM'] = action_dim
+            if 'ARCHITECTURE' in attr.keys():
+                attr['ARCHITECTURE'].insert(0, state_dim)
+                attr['ARCHITECTURE'].append(action_dim)
+    activations = ['Tanh','ReLU']
+    initializations = ['default','xavier','kaiming','orthogonal']
+
+
 def qvalue_architecture(alg):
     param_path = 'algorithms/{}/parameters.json'.format(alg.name.lower())
     p = HyperParameter(path=param_path)

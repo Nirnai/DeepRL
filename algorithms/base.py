@@ -12,14 +12,17 @@ from utils.values_functions import Value, QValue
 from utils.memory import Buffer, ReplayBuffer
 
 class BaseRL(metaclass=ABCMeta):
-    def __init__(self, env, device="cuda" if torch.cuda.is_available() else "cpu"):
+    def __init__(self, env, param=None, device="cuda" if torch.cuda.is_available() else "cpu"):
         self.env = env
         self.device = torch.device(device)
         self.rng = np.random.RandomState(0)
         self.actor = None
         self.critic = None
         self.state_dim, self.action_dim = getEnvInfo(env)
-        self.param = self.load_parameters()
+        if param is None:
+            self.param = self.load_parameters()
+        else:
+            self.param = param
         models = ['value', 'qvalue', 'policy']        
         for model in models: 
             if(hasattr(self.param, model)):
@@ -96,15 +99,15 @@ class OffPolicy():
 
 class ActionValueFunction():
     def __init__(self, param, device):
-        self.Q1 = QValue(param, device, init_hidden=param['INIT_HIDDEN'], init_output=param['INIT_OUTPUT'])
-        self.Q2 = QValue(param, device, init_hidden=param['INIT_HIDDEN'], init_output=param['INIT_OUTPUT'])
+        self.Q1 = QValue(param, device)
+        self.Q2 = QValue(param, device)
         self.Q1_target = QValue(param, device)
         self.Q2_target = QValue(param, device)
         self.Q1_target.load_state_dict(self.Q1.state_dict())
         self.Q2_target.load_state_dict(self.Q1.state_dict())
         self.Q1_target.eval()
         self.Q2_target.eval()
-        self.Q_optim = optim.Adam(list(self.Q1.parameters()) + list(self.Q2.parameters()), lr=param['LEARNING_RATE'])
+        self.Q_optim = optim.Adam(list(self.Q1.parameters()) + list(self.Q2.parameters()), lr=param['LEARNING_RATE'], weight_decay=param['WEIGHT_DECAY'])
         self._tau = param['TAU']
     
     def __call__(self, state, action):
@@ -128,8 +131,8 @@ class ActionValueFunction():
 
 class ValueFunction():   
     def __init__(self, param, device):
-        self.V = Value(param, device, init_hidden=param['INIT_HIDDEN'], init_output=param['INIT_OUTPUT'])
-        self.V_optim = optim.Adam(self.V.parameters(), lr=param['LEARNING_RATE'])
+        self.V = Value(param, device)
+        self.V_optim = optim.Adam(self.V.parameters(), lr=param['LEARNING_RATE'], weight_decay=param['WEIGHT_DECAY'])
     
     def parameters(self):
         return self.V.parameters()

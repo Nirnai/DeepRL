@@ -80,15 +80,52 @@ from evaluator.plot import plot_dataset, compare_datasets, plot, load_dataset, p
 # data4 = 'data/ppo/CartpoleNewImpl/LRDecay+GradNormClip/PPO_CartpoleSwingup-v0_returns_offline.npz'
 # compare_datasets([data1, data2, data3, data4], goal=1,show=False)
 
-data1 = 'data/CGP_CartpoleSwingup-v0_returns_online.npz'
-data2 = 'data/cgp/CGP_CartpoleSwingup-v0_returns_online.npz'
-compare_datasets([data1, data2],goal=1000)
-mean = 'data/CGP_CartpoleSwingup-v0_final_returns.npz'
-std = 'data/CGP_CartpoleSwingup-v0_final_deviation.npz'
-x = [0]
-mu = load_dataset(mean)
-sigma = load_dataset(std)
-print(mu, sigma)
+data1 = 'data/ppo/CartpoleNewImpl/LRDecay+NormAdv/PPO_CartpoleSwingup-v0_returns_online.npz'
+data7 = 'data/PPO_CartpoleSwingup-v0_2019-10-15_15-08/returns_online.npz'
+compare_datasets([data1, data7],goal=1000)
+
+# mean_files = [ 'data/ppo/CartpoleNewImpl/LRDecay+NormAdv/PPO_CartpoleSwingup-v0_final_returns.npz',
+#                'data/PPO_CartpoleSwingup-v0_2019-10-15_15-08/final_returns.npz'
+#                ]
+
+# std_files = ['data/ppo/CartpoleNewImpl/LRDecay+NormAdv/PPO_CartpoleSwingup-v0_final_deviation.npz',
+#              'data/PPO_CartpoleSwingup-v0_2019-10-15_15-08/final_deviation.npz'
+#              ]
+
+# x = ['base','init']
+# means = []
+# stds = []
+# n = 10
+# for mean, std in zip(mean_files, std_files):
+#         mu = load_dataset(mean)
+#         sigma = load_dataset(std)
+#         n_total = len(mu) * n
+#         new_mean =  n/n_total * np.sum(mu[-1])
+#         new_sigma = np.sqrt(n/n_total * (np.sum(sigma[-1]**2) + np.sum((mu[-1] - new_mean)**2)))
+#         means.append(new_mean)
+#         stds.append(new_sigma)      
+
+# fig, ax = plt.subplots()
+# ax.bar(x, means, yerr=stds, align='center', alpha=0.5, ecolor='black', capsize=10)
+
+
+# data3 = 'data/ppo/CartpoleNewImpl/LRDecay+NormAdv/PPO_CartpoleSwingup-v0_explained_variance.npz'
+# data4 = 'data/PPO_CartpoleSwingup-v0_2019-10-12_18-11/explained_variance.npz'
+# data8 = 'data/PPO_CartpoleSwingup-v0_2019-10-14_14-49/explained_variance.npz'
+# compare_datasets([data3, data4],goal=1)
+
+# data5 = 'data/PPO_CartpoleSwingup-v0_2019-10-12_16-28/returns_offline.npz'
+# data6 = 'data/PPO_CartpoleSwingup-v0_2019-10-12_16-28/deviation_offline.npz'
+# data9 = 'data/PPO_CartpoleSwingup-v0_2019-10-15_15-08/returns_offline.npz'
+# data10 = 'data/PPO_CartpoleSwingup-v0_2019-10-15_15-08/deviation_offline.npz'
+# plot_offline([data5, data9],[data6, data10],1)
+
+# mean = 'data/CGP_CartpoleSwingup-v0_final_returns.npz'
+# std = 'data/CGP_CartpoleSwingup-v0_final_deviation.npz'
+# x = [0]
+# mu = load_dataset(mean)
+# sigma = load_dataset(std)
+# print(mu, sigma)
 # plot_dataset(data, goal=1000, show=False, statistic='normal')
 # plot_dataset(data1, goal=1000, show=False, statistic='normal')
 # plot_dataset(data3, goal=1000, show=False, statistic='normal')

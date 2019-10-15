@@ -1,3 +1,4 @@
+import os
 import json
 # import ruamel.yaml as ryaml
 
@@ -31,6 +32,8 @@ class HyperParameter:
             )
 
     def save_parameters(self, path):
+        if os.path.isdir(path):
+            path += '/parameters.json'
         with open(path, 'w') as outfile:
             json.dump(self.__dict__, outfile, indent=4, sort_keys=True)
     

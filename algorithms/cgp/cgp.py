@@ -2,8 +2,9 @@ import torch
 import torch.distributions as dist
 import torch.nn.functional as F
 import numpy as np
-from algorithms import OffPolicy, BaseRL, ActionValueFunction
+from algorithms import OffPolicy, BaseRL
 from utils.policies import CrossEntropyGuidedPolicy, DeterministicPolicy
+from utils.values_functions import ActionValueFunction
 
 import time
 

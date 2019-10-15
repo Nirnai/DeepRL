@@ -39,6 +39,7 @@ class Evaluator():
 
 
     def run_statistic(self, samples=10, seed=100):
+        self.param.save_parameters(self.out_dir)
         seeds = []
         rng = np.random.RandomState(seed)
         for i in range(samples):
