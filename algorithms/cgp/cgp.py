@@ -47,15 +47,11 @@ class CGP(BaseRL, OffPolicy):
         next_actions = self.actor_target(batch['next_states']) + noise
 
         # Update Q-Function
-        # next_actions = self.actor_target(batch['next_states'])
         with torch.no_grad():
             q1_next, q2_next = self.Q.target(batch['next_states'], next_actions) 
             q_targets = batch['rewards'] + self.param.GAMMA * torch.min(q1_next, q2_next)
         q1, q2 = self.Q(batch['states'], batch['actions'])
         critic_loss = F.mse_loss(q1, q_targets) + F.mse_loss(q2, q_targets) 
-        # q1, q2, q_targets = F.softmax(q1), F.softmax(q2), F.softmax(q_targets)
-        # loss = F.binary_cross_entropy(q1, q_targets) + F.binary_cross_entropy(q2, q_targets)
-        # loss = F.mse_loss(q, q_targets)
         self.Q.optimize(critic_loss)
 
         # Actor Step

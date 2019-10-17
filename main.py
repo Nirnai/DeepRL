@@ -36,8 +36,8 @@ if __name__ == '__main__':
     # alg = TRPO(env)
     # alg = PPO(env)
     # alg = SAC(env)
-    # alg = CGP(env)
-    alg = TD3(env)    
+    alg = CGP(env)
+    # alg = TD3(env)    
 
     # ########### Evaluation ###########
     evl = Evaluator(alg, 'data')
