@@ -8,7 +8,7 @@
     "ADVANTAGE_NORMALIZATION": true,
     "EARLY_STOPPING": false,
     "LR_SCHEDULE": true,
-    "MAX_ENTROPY": true,
+    "MAX_ENTROPY": false,
     "MAX_GRAD_NORM": 0.5,
     "DELAYED_START": 0,
     "EPOCHS": 10,

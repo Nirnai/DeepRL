@@ -19,6 +19,7 @@ class CGP(BaseRL, OffPolicy):
         self.steps = 0
 
     def act(self, state, deterministic=False):
+        self.steps += 1
         with torch.no_grad():
             if deterministic:
                 action = self.actor(torch.from_numpy(state).float().to(self.device)).cpu().numpy()
@@ -33,7 +34,6 @@ class CGP(BaseRL, OffPolicy):
                     action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
         next_state, reward, done, _ = self.env.step(action)
         self.memory.store(state, action, reward, next_state, done) 
-        self.steps += 1
         return next_state, reward, done
 
 

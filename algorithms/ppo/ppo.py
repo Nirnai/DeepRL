@@ -11,7 +11,7 @@ from utils.policies import GaussianPolicy, BoundedGaussianPolicy
 from utils.values_functions import ValueFunction
 from copy import deepcopy
 import gym
-from envs.vectorized import DummyVecEnv
+# from envs.vectorized import DummyVecEnv
 from utils.memory import Buffer
 
 

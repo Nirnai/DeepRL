@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+import numpy as np
 import scipy.signal
 from copy import deepcopy
 from torch.distributions.kl import kl_divergence
@@ -19,14 +20,26 @@ class TRPO(BaseRL, OnPolicy):
 
 
     def act(self, state, deterministic=False):
-        with torch.no_grad():
-            action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy()
-        next_state, reward, done, _ = self.env.step(action)
-        if not deterministic:
-            self.memory.store(state, action, reward, next_state, done)
-            if done:
-                self.memory.process_episode(self.critic, self.actor, maximum_entropy=False) 
         self.steps += 1
+        with torch.no_grad():
+            if self.steps < self.param.DELAYED_START:
+                action = self.env.action_space.sample()
+            else:
+                self.actor.eval()
+                action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy() 
+            next_state, reward, done, _ = self.env.step(action)
+            if not deterministic:
+                done_bool = float(done) #if self.episode_steps < self.env._max_episode_steps else 0
+                self.critic.eval()
+                value, next_value = self.critic(torch.from_numpy(np.stack([state, next_state])).float().to(self.device))
+                # value = self.critic(torch.from_numpy(state).float().to(self.device))
+                # next_value = self.critic(torch.from_numpy(next_state).float().to(self.device))
+                
+                log_pi = self.actor.log_prob(torch.from_numpy(state).float().to(self.device), 
+                                            torch.from_numpy(action).float().to(self.device))
+                self.memory.store(state, action, reward, next_state, done_bool, value, next_value, log_pi)
+                if done:
+                    self.memory.process_episode(maximum_entropy=self.param.MAX_ENTROPY) 
         return next_state, reward, done
     
 
@@ -34,8 +47,9 @@ class TRPO(BaseRL, OnPolicy):
     def learn(self):
         rollouts = self.onPolicyData
         # states = (rollouts['states']-rollouts['states_mean'])/rollouts['states_std']
-        returns = rollouts['returns']
-        advantages = rollouts['advantages']
+        returns = rollouts['returns_gae']
+        if self.param.ADVANTAGE_NORMALIZATION:
+            rollouts['advantages'] = (rollouts['advantages'] - rollouts['advantages'].mean()) / (rollouts['advantages'].std() + 1e-5) 
         for _ in range(self.param.EPOCHS):
             # Compute Advantages
             for _ in range(self.param.VALUE_EPOCHS):
@@ -45,16 +59,16 @@ class TRPO(BaseRL, OnPolicy):
                 self.critic.optimize(critic_loss)
             # Update Actor
             # advantages = (advantages - advantages.mean()) / advantages.std()
-            pg = self.policy_gradient(advantages, rollouts)
+            pg = self.policy_gradient(rollouts)
             npg = self.natural_gradient(pg, rollouts)
             parameters, stepsize = self.linesearch(npg, pg, rollouts)
             self.optimize_actor(parameters)
 
         metrics = dict()
         with torch.no_grad():
-            metrics['value'] = values.mean().item()
-            metrics['target'] = returns.mean().item()
-            metrics['explained_variance'] = (1 - (returns - values).pow(2).sum()/(returns-returns.mean()).pow(2).sum()).item()
+            # metrics['value'] = values.mean().item()
+            # metrics['target'] = returns.mean().item()
+            metrics['explained_variance'] = (1 - (rollouts['returns_mc'] - rollouts['values']).pow(2).sum()/(rollouts['returns_mc']-rollouts['returns_mc'].mean()).pow(2).sum()).item()
             # metrics['entropy'] = self.actor.entropy(rollouts['states']).mean().item()
             metrics['stepsize'] = stepsize.item()
             # metrics['kl'] = total_kl.item()
@@ -66,9 +80,9 @@ class TRPO(BaseRL, OnPolicy):
     def optimize_actor(self, new_parameters):
         vector_to_parameters(new_parameters, self.actor.parameters())
 
-    def policy_gradient(self, advantages, rollouts):
+    def policy_gradient(self, rollouts):
         log_probs = self.actor.log_prob(rollouts['states'], rollouts['actions'])
-        pg_objective = (log_probs * advantages).mean()
+        pg_objective = (log_probs * rollouts['advantages']).mean()
         return parameters_to_vector(torch.autograd.grad(pg_objective, self.actor.parameters()))
 
     def natural_gradient(self, pg, rollouts):

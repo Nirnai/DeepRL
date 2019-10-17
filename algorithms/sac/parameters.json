@@ -8,17 +8,23 @@
         "INIT_OUTPUT": "default",
         "ACTIVATION" : "Tanh",
         "LEARNING_RATE": 1e-3,
-        "TAU": 0.005
+        "TAU": 0.005,
+        "WEIGHT_DECAY": 0.0,
+        "DROPOUT": false,
+        "BATCHNORM": false
     },
     "policy" : {
         "ARCHITECTURE" : [
             64,
             64
         ],
-        "INIT_HIDDEN": "dafault",
+        "INIT_HIDDEN": "default",
         "INIT_OUTPUT": "default",
         "ACTIVATION" : "Tanh",
-        "LEARNING_RATE": 1e-3
+        "LEARNING_RATE": 1e-3,
+        "WEIGHT_DECAY": 0.0,
+        "DROPOUT": false,
+        "BATCHNORM": false
     },
     "POLICY_UPDATE_FREQ" : 2,
     "MEMORY_SIZE": 1e6,

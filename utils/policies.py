@@ -74,7 +74,7 @@ class DeterministicPolicy(nn.Module):
         self.to(self.device)
     
     def forward(self, state):
-        return torch.tanh(self._action(state))
+        return torch.tanh(self.action(state))
 
     def optimize(self, loss):
         self.optimizer.zero_grad()

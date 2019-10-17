@@ -10,6 +10,9 @@
     "NUM_CG_ITER": 10,
     "TAU": 0.01,
     "VALUE_EPOCHS": 80,
+    "DELAYED_START": 0,
+    "MAX_ENTROPY": false,
+    "ADVANTAGE_NORMALIZATION": true,
     "evaluation": {
         "avaraging_window": 20,
         "disturbance_intervall": 10,
@@ -24,7 +27,12 @@
             64,
             64
         ],
-        "LEARNING_RATE": 0
+        "LEARNING_RATE": 0,
+        "INIT_HIDDEN": "default",
+        "INIT_OUTPUT": "default",
+        "WEIGHT_DECAY": 0.0,
+        "DROPOUT": false,
+        "BATCHNORM": false
     },
     "value": {
         "ACTIVATION": "Tanh",
@@ -32,6 +40,11 @@
             64,
             64
         ],
-        "LEARNING_RATE": 0.001
+        "LEARNING_RATE": 0.001,
+        "INIT_HIDDEN": "default",
+        "INIT_OUTPUT": "default",
+        "WEIGHT_DECAY": 0.0,
+        "DROPOUT": false,
+        "BATCHNORM": false
     }
 }

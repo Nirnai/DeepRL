@@ -8,7 +8,10 @@
         "INIT_OUTPUT": "default",
         "ACTIVATION" : "Tanh",
         "LEARNING_RATE": 1e-3,
-        "TAU": 0.005
+        "TAU": 0.005,
+        "WEIGHT_DECAY": 0.0,
+        "DROPOUT": false,
+        "BATCHNORM": false
     },
     "policy" : {
         "ARCHITECTURE" : [
@@ -19,6 +22,9 @@
         "INIT_OUTPUT": "default",
         "ACTIVATION" : "Tanh",
         "LEARNING_RATE": 1e-3,
+        "WEIGHT_DECAY": 0.0,
+        "DROPOUT": false,
+        "BATCHNORM": false,
         "CEM_ITERATIONS": 2,
         "CEM_BATCH": 64,
         "CEM_TOPK": 6
