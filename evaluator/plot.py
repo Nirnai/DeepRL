@@ -20,7 +20,7 @@ def plot(path, x=None):
         else:
             plt.plot(x,sample)
 
-def plot_dataset(path, total_steps=1e6, goal=0, statistic=None, show=True):
+def plot_dataset(path, total_steps=1e6, goal=0, statistic=None, show=False):
     data = load_dataset(path)
     episodes = range(len(data[0]))
     fig = plt.figure()
@@ -76,7 +76,7 @@ def plot_final_performance(paths_returns, paths_deviations, n):
     ax.bar(x, means, yerr=stds, align='center', alpha=0.5, ecolor='black', capsize=10)
 
 
-def compare_datasets(paths, goal=0, show=True):
+def compare_datasets(paths, goal=0, show=False):
     fig = plt.figure()
     for path in paths:
         name = os.path.basename(path)[:-4]

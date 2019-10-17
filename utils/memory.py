@@ -55,6 +55,7 @@ class Buffer():
         values = self.values[episode]
         next_values = self.next_values[episode]
         log_probs = self.log_probs[episode]
+        dones = self.dones[episode]
         if maximum_entropy:
             # Max Entropy RL
             # rewards += self.tau * actor.entropy(states[:-1]).squeeze().cpu().numpy()

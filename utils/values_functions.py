@@ -64,7 +64,7 @@ class ValueFunction():
 class Value(nn.Module):
     def __init__(self, params, device):
         super(Value, self).__init__()
-        self.value = make_mlp(params)
+        self.value = make_mlp(params, 1)
         self.device = device
         self.to(self.device)
 
@@ -76,7 +76,7 @@ class QValue(nn.Module):
     def __init__(self, params, device):
         super(QValue, self).__init__()
         params['ARCHITECTURE'][0] += params['ARCHITECTURE'][-1]
-        self.qvalue = make_mlp(params)
+        self.qvalue = make_mlp(params, 1)
         self.device = device
         self.to(self.device)
 

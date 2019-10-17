@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 
-def make_mlp(params):
+
+def make_mlp(params, output_dim):
     ins = params['ARCHITECTURE'][:-1]
     outs = params['ARCHITECTURE'][1:-1]
     acts = params['ACTIVATION']
@@ -10,11 +11,11 @@ def make_mlp(params):
     hinit = params['INIT_HIDDEN']
     oinit = params['INIT_OUTPUT']
     layers = [layer(in_, 
-                        out_, 
-                        activation_=acts,
-                        batchnorm=bnorm,
-                        dropout=dout).apply(init[hinit]) for in_, out_ in zip(ins, outs)]
-    layers.append(layer(outs[-1], 1).apply(init[oinit]))
+                    out_, 
+                    activation_=acts,
+                    batchnorm=bnorm,
+                    dropout=dout).apply(init[hinit]) for in_, out_ in zip(ins, outs)]
+    layers.append(layer(outs[-1], output_dim).apply(init[oinit]))
     return unwrap_layers(nn.Sequential(*layers))
 
 
@@ -48,7 +49,7 @@ def ddpg_init(m):
 
 def xavier_init(m):
     if isinstance(m, nn.Linear):
-        nn.init.xavier_normal_(m.weight, gain=nn.init.calculate_gain('relu'))
+        nn.init.xavier_normal_(m.weight, gain=nn.init.calculate_gain('tanh'))
         nn.init.zeros_(m.bias)
 
 def kaiming_init(m):

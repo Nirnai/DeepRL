@@ -4,8 +4,8 @@ from gym import spaces
 from collections import OrderedDict
 
 def getEnvInfo(env):
-    state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.shape[0]
+    state_dim = int(env.observation_space.shape[0])
+    action_dim = int(env.action_space.shape[0])
     return state_dim, action_dim
 
 class VecEnv(ABC):

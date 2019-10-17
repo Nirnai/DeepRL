@@ -38,27 +38,27 @@ class PPO(BaseRL, OnPolicy):
         self.steps += 1
         self.state_normalizer.observe(state)
         with torch.no_grad():
-            # state = self.state_normalizer.normalize(state)
+            state = self.state_normalizer.normalize(state)
             if self.steps < self.param.DELAYED_START:
                 action = self.env.action_space.sample()
             else:
                 self.actor.eval()
                 action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy() 
             next_state, reward, done, _ = self.env.step(action)
-            # next_state_norm = self.state_normalizer.normalize(next_state)
+            next_state_norm = self.state_normalizer.normalize(next_state)
            
             if not deterministic:
-                done_bool = float(done) if self.episode_steps < self.env._max_episode_steps else 0
+                done_bool = float(done) #if self.episode_steps < self.env._max_episode_steps else 0
                 self.critic.eval()
-                value, next_value = self.critic(torch.from_numpy(np.stack([state, next_state])).float().to(self.device))
+                value, next_value = self.critic(torch.from_numpy(np.stack([state, next_state_norm])).float().to(self.device))
                 # value = self.critic(torch.from_numpy(state).float().to(self.device))
                 # next_value = self.critic(torch.from_numpy(next_state).float().to(self.device))
                 
                 log_pi = self.actor.log_prob(torch.from_numpy(state).float().to(self.device), 
                                             torch.from_numpy(action).float().to(self.device))
-                self.memory.store(state, action, reward, next_state, done_bool, value, next_value, log_pi)
+                self.memory.store(state, action, reward, next_state_norm, done_bool, value, next_value, log_pi)
                 if done:
-                    self.memory.process_episode() 
+                    self.memory.process_episode(maximum_entropy=self.param.MAX_ENTROPY) 
         return next_state, reward, done
     
     @OnPolicy.loop
@@ -174,7 +174,7 @@ class Normalizer():
         last_mean = self.mean
         self.mean += (x-self.mean)/self.n
         self.mean_diff += (x-last_mean)*(x-self.mean)
-        self.var = (self.mean_diff/self.n).clip(min=1e-2)
+        self.var = (self.mean_diff/self.n).clip(min=1e-5)
 
     def normalize(self, inputs):
         obs_std = np.sqrt(self.var)

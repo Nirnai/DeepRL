@@ -1,6 +1,6 @@
 import gym 
-import envs
-from envs import NormalizeWrapper
+# import envs
+import dm_control2gym
 from algorithms import PPO, TRPO, SAC, CGP, TD3
 from evaluator import Evaluator, plot_dataset
 
@@ -24,10 +24,13 @@ if __name__ == '__main__':
     # env = gym.make('InvertedPendulumPyBulletEnv-v0')
     # env = gym.make('InvertedPendulumSwingupPyBulletEnv-v0')
     # env = gym.make('PendulumSwingup-v0')
-    env = gym.make('CartpoleSwingup-v0')
+    # env = gym.make('CartpoleSwingup-v0')
     # env = gym.make('CartpoleBalance-v0')
     # env = gym.make('WalkerWalk-v0')
     # env = gym.make('HumanoidWalk-v0')
+    env = dm_control2gym.make(domain_name="cartpole", task_name="swingup")
+    # env = gym.make('ManipulatorBring_Ball-v0')
+    # env = gym.wrappers.FlattenDictWrapper(env, dict_keys=['observation', 'desired_goal'])
 
     ########## Algorithm ###########
     # alg = TRPO(env)

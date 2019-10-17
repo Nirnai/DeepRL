@@ -5,6 +5,14 @@ from algorithms import PPO, TRPO, SAC, CGP, TD3
 from evaluator import Evaluator, plot_dataset
 from algorithms import HyperParameter
 
+BENCHMARK_ENVS = [
+    'CartpoleBalance-v0',
+    'CartpoleSwingup-v0',
+    'AcrobotSwingup-v0',
+    'ManipulatorBring_ball-v0'
+
+]
+
 def ppo_experiments(env):
     env = gym.make('CartpoleSwingup-v0')
     state_dim, action_dim = getEnvInfo(env)

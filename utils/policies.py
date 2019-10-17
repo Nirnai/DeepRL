@@ -10,7 +10,7 @@ from utils.torch_utils import make_mlp
 class GaussianPolicy(nn.Module):
     def __init__(self, params, device):
         super(GaussianPolicy, self).__init__()
-        self.mean = make_mlp(params)
+        self.mean = make_mlp(params, params['ARCHITECTURE'][-1])
         self.log_std = nn.Parameter(torch.ones(params['ARCHITECTURE'][-1]))
         self.optimizer = optim.Adam(self.parameters(), lr=params['LEARNING_RATE'], weight_decay=params['WEIGHT_DECAY'])
         self.device = device
@@ -43,7 +43,6 @@ class GaussianPolicy(nn.Module):
         self.optimizer.step()
 
 
-
 class BoundedGaussianPolicy(GaussianPolicy):
     def __init__(self, params, device):
         super(BoundedGaussianPolicy, self).__init__(params, device)
@@ -69,7 +68,7 @@ class BoundedGaussianPolicy(GaussianPolicy):
 class DeterministicPolicy(nn.Module):
     def __init__(self, params, device):
         super(DeterministicPolicy, self).__init__()
-        self.action = make_mlp(params)
+        self.action = make_mlp(params, params['ARCHITECTURE'][-1])
         self.optimizer = optim.Adam(self.parameters(), lr=params['LEARNING_RATE'], weight_decay=params['WEIGHT_DECAY'])
         self.device = device
         self.to(self.device)

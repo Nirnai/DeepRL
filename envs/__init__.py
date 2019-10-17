@@ -1,8 +1,7 @@
 import gym
 from gym.envs.registration import register
 from dm_control import suite
-from envs.wrapper import DeepMindControlSuiteWrapper, NormalizeWrapper
-
+from envs.wrapper import DeepMindControlSuiteWrapper
 for domain, task in suite.BENCHMARKING:
     register(
         id=domain.title() + task.title() + '-v0',
