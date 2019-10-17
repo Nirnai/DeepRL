@@ -5,18 +5,31 @@ from algorithms import PPO, TRPO, SAC, CGP, TD3
 from evaluator import Evaluator, plot_dataset
 from algorithms import HyperParameter
 
-LowDim = [
+low_dim = [
     ('cartpole', 'balance'),
     ('cartpole', 'swingup'),
     ('acrobot', 'swingup'),
     ('manipulator', 'bring_ball'),
 ]
 
+high_dim = [
+    ('cheetah', 'run'),
+    ('hopper', 'hop'),
+    ('walker', 'run')
+]
+
+sparse = [
+    ('cartpole', 'balance_sparse'),
+    ('cartpole', 'swingup_sparse'),
+    ('acrobot', 'swingup_sparse'),
+    ('ball_in_cup', 'catch')
+]
+
 algs = [TD3, CGP, SAC, TRPO, PPO]
 
 
 def baseline(alg):
-    for domain, task in LowDim:
+    for domain, task in low_dim:
         env = dm_control2gym.make(domain_name=domain, task_name=task)
         agent = alg(env)
         evl = Evaluator(agent, 'data/baseline')
@@ -26,33 +39,6 @@ if __name__ == '__main__':
     baseline(CGP)
 
 
-# (('acrobot', 'swingup'), 
-# ('acrobot', 'swingup_sparse'), 
-# ('ball_in_cup', 'catch'), 
-# ('cartpole', 'balance'), 
-# ('cartpole', 'balance_sparse'), 
-# ('cartpole', 'swingup'), 
-# ('cartpole', 'swingup_sparse'), 
-# ('cheetah', 'run'), ('finger', 'spin'), 
-# ('finger', 'turn_easy'), 
-# ('finger', 'turn_hard'), 
-# ('fish', 'upright'), 
-# ('fish', 'swim'), 
-# ('hopper', 'stand'), 
-# ('hopper', 'hop'), 
-# ('humanoid', 'stand'), 
-# ('humanoid', 'walk'), 
-# ('humanoid', 'run'), 
-# ('manipulator', 'bring_ball'), 
-# ('pendulum', 'swingup'), 
-# ('point_mass', 'easy'), 
-# ('reacher', 'easy'), 
-# ('reacher', 'hard'),
-# ('swimmer', 'swimmer6'), 
-# ('swimmer', 'swimmer15'), 
-# ('walker', 'stand'), 
-# ('walker', 'walk'), 
-# ('walker', 'run'))
 
 # def ppo_experiments(env):
 #     env = gym.make('CartpoleSwingup-v0')
