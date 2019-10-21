@@ -8,8 +8,7 @@ from algorithms import HyperParameter
 low_dim = [
     ('cartpole', 'balance'),
     ('cartpole', 'swingup'),
-    ('acrobot', 'swingup'),
-    ('manipulator', 'bring_ball'),
+    ('acrobot', 'swingup')
 ]
 
 high_dim = [
@@ -45,7 +44,7 @@ def init(alg):
 
 if __name__ == '__main__':
     # baseline(PPO)
-    init(PPO)
+    init(TD3)
 
 
 # def ppo_experiments(env):
