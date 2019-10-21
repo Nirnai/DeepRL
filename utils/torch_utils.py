@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+import math
 
 def make_mlp(params, output_dim):
     ins = params['ARCHITECTURE'][:-1]
@@ -8,14 +8,13 @@ def make_mlp(params, output_dim):
     acts = params['ACTIVATION']
     bnorm = params['BATCHNORM']
     dout = params['DROPOUT']
-    hinit = params['INIT_HIDDEN']
-    oinit = params['INIT_OUTPUT']
+    init = params['INIT']
     layers = [layer(in_, 
                     out_, 
                     activation_=acts,
                     batchnorm=bnorm,
-                    dropout=dout).apply(init[hinit]) for in_, out_ in zip(ins, outs)]
-    layers.append(layer(outs[-1], output_dim).apply(init[oinit]))
+                    dropout=dout).apply(inits[init]) for in_, out_ in zip(ins, outs)]
+    layers.append(layer(outs[-1], output_dim).apply(inits[init]))
     return unwrap_layers(nn.Sequential(*layers))
 
 
@@ -41,34 +40,34 @@ def unwrap_layers(model):
     return nn.Sequential(*l)
 
 
-def ddpg_init(m):
-    # DDPG initialization
+def naive(m):
     if isinstance(m, nn.Linear):
-        nn.init.uniform_(m.weight, a=-3e-3, b=3e-3)
+        fan_in, _ = nn.init._calculate_fan_in_and_fan_out(m.weight)
+        nn.init.uniform_(m.weight, a=-math.sqrt(1.0 / float(fan_in)), b=math.sqrt(1.0 / float(fan_in)))
         nn.init.zeros_(m.bias)
 
-def xavier_init(m):
+def xavier(m):
     if isinstance(m, nn.Linear):
-        nn.init.xavier_normal_(m.weight, gain=nn.init.calculate_gain('tanh'))
+        nn.init.xavier_uniform_(m.weight, gain=nn.init.calculate_gain('tanh'))
         nn.init.zeros_(m.bias)
 
-def kaiming_init(m):
+def kaiming(m):
     if isinstance(m, nn.Linear):
-        nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
+        nn.init.kaiming_uniform_(m.weight, nonlinearity='relu')
         nn.init.zeros_(m.bias)
 
-def orthogonal_init(m):
+def orthogonal(m):
     if isinstance(m, nn.Linear):
-        nn.init.orthogonal_(m.weight)
+        nn.init.orthogonal_(m.weight, gain=nn.init.calculate_gain('tanh'))
         nn.init.zeros_(m.bias)
 
-def default_init(m):
+def default(m):
     return
 
-init = {
-    'xavier': xavier_init,
-    'kaiming': kaiming_init,
-    'orthogonal': orthogonal_init,
-    'default' : default_init,
-    'ddpg': ddpg_init
+inits = {
+    'naive' : naive,
+    'xavier': xavier,
+    'kaiming': kaiming,
+    'orthogonal': orthogonal,
+    'default' : default,
 }

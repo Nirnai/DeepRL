@@ -14,6 +14,7 @@ class TD3(BaseRL, OffPolicy):
         self.name = "TD3"
         self.critic = ActionValueFunction(self.param.qvalue, self.device)
         self.actor = DeterministicPolicy(self.param.policy, self.device)
+        self.actor = Boun
         self.actor_target = deepcopy(self.actor)
         self.steps = 0                    
 

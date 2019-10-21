@@ -11,8 +11,7 @@ def load_dataset(path):
     else:
         raise FileNotFoundError
 
-def plot(path, x=None):
-    data = load_dataset(path)
+def plot(data, x=None):
     plt.figure()
     for sample in data:
         if x is None:

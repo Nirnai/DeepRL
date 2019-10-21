@@ -5,7 +5,7 @@ from algorithms import PPO, TRPO, SAC, CGP, TD3
 from evaluator import Evaluator, plot_dataset
 from algorithms import HyperParameter
 
-LowDim = [
+low_dim = [
     ('cartpole', 'balance'),
     ('cartpole', 'swingup'),
     ('acrobot', 'swingup'),
@@ -16,15 +16,23 @@ algs = [TD3, CGP, SAC, TRPO, PPO]
 
 
 def baseline(alg):
-    for domain, task in LowDim:
+    for domain, task in low_dim:
         env = dm_control2gym.make(domain_name=domain, task_name=task)
         agent = alg(env)
         evl = Evaluator(agent, 'data/baseline')
         evl.run_statistic(samples=20, seed=0)
 
-if __name__ == '__main__':
-    baseline(CGP)
 
+def init(alg):
+    for domain, task in low_dim:
+        env = dm_control2gym.make(domain_name=domain, task_name=task)
+        agent = alg(env)
+        evl = Evaluator(agent, 'data/init')
+        evl.run_statistic(samples=20, seed=0)
+
+if __name__ == '__main__':
+    # baseline(PPO)
+    init(PPO)
 
 # (('acrobot', 'swingup'), 
 # ('acrobot', 'swingup_sparse'), 

@@ -38,25 +38,22 @@ class PPO(BaseRL, OnPolicy):
         self.steps += 1
         self.state_normalizer.observe(state)
         with torch.no_grad():
-            state = self.state_normalizer.normalize(state)
+            # state = self.state_normalizer.normalize(state)
             if self.steps < self.param.DELAYED_START:
                 action = self.env.action_space.sample()
             else:
                 self.actor.eval()
                 action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy() 
             next_state, reward, done, _ = self.env.step(action)
-            next_state_norm = self.state_normalizer.normalize(next_state)
+            # next_state_norm = self.state_normalizer.normalize(next_state)
            
             if not deterministic:
-                done_bool = float(done) #if self.episode_steps < self.env._max_episode_steps else 0
+                done_bool = float(done)
                 self.critic.eval()
-                value, next_value = self.critic(torch.from_numpy(np.stack([state, next_state_norm])).float().to(self.device))
-                # value = self.critic(torch.from_numpy(state).float().to(self.device))
-                # next_value = self.critic(torch.from_numpy(next_state).float().to(self.device))
-                
+                value, next_value = self.critic(torch.from_numpy(np.stack([state, next_state])).float().to(self.device))
                 log_pi = self.actor.log_prob(torch.from_numpy(state).float().to(self.device), 
                                             torch.from_numpy(action).float().to(self.device))
-                self.memory.store(state, action, reward, next_state_norm, done_bool, value, next_value, log_pi)
+                self.memory.store(state, action, reward, next_state, done_bool, value, next_value, log_pi)
                 if done:
                     self.memory.process_episode(maximum_entropy=self.param.MAX_ENTROPY) 
         return next_state, reward, done
@@ -88,7 +85,7 @@ class PPO(BaseRL, OnPolicy):
                 if self.param.EARLY_STOPPING and kl_div > self.param.MAX_KL_DIV:
                     break
                 actor_loss = self.clipped_policy_objective(old_log_probs, log_probs, advantages)
-                actor_loss -= self.param.ENTROPY_COEFFICIENT * log_probs.mean()
+                # actor_loss -= self.param.ENTROPY_COEFFICIENT * log_probs.mean()
                 # clip_grad_norm_(self.actor.parameters(), self.param.MAX_GRAD_NORM)
                 self.actor.optimize(actor_loss)
         self.critic_scheduler.step()
@@ -106,9 +103,9 @@ class PPO(BaseRL, OnPolicy):
             # metrics['state_var'] = self.state_normalizer.var.mean()
             # metrics['value'] = values.mean().item()
             # metrics['target'] = returns.mean().item()
-            metrics['explained_variance'] = (1 - (rollouts['returns_mc'] - rollouts['values']).pow(2).sum()/(rollouts['returns_mc']-rollouts['returns_mc'].mean()).pow(2).sum()).item()
-            # metrics['entropy'] = self.actor.entropy(rollouts['states']).mean().item()
-            # metrics['kl'] = total_kl.item()
+            metrics['explained_variance'] = (1 - (rollouts['returns_mc'] - rollouts['values']).pow(2).sum()/(rollouts['returns_mc']-rollouts['returns_mc'].mean() + 1e-5).pow(2).sum()).item()
+            metrics['entropy'] = self.actor.entropy(rollouts['states']).mean().item()
+            metrics['kl'] = kl_div.item()
             # metrics['stepsize'] = total_stepsize.item()
         return metrics
 
@@ -125,19 +122,11 @@ class PPO(BaseRL, OnPolicy):
     def clipped_value_loss(self, old_val, val, ret):
         loss = (val - ret).pow(2)
         clipped_loss = ((old_val + torch.clamp(val - old_val, -self.param.CLIP, self.param.CLIP)) - ret).pow(2)
-        return clipped_loss.mean()
+        return torch.min(loss, clipped_loss).mean()
         # clipped_val = old_val + (val - old_val).clamp(-self.param.CLIP, self.param.CLIP)
         # loss = (val - ret).pow(2)
         # clipped_loss = (clipped_val - ret).pow(2)
         # return torch.max(loss, clipped_loss).mean()
-        
-    # def importance_weights(self, states, actions): 
-    #     with torch.no_grad():
-    #         old_log_probs = self.actor_old.log_prob(states, actions)
-    #     curr_log_probs = self.actor.log_prob(states, actions)
-    #     kl = (old_log_probs-curr_log_probs).mean()
-    #     ratio = torch.exp(curr_log_probs - old_log_probs)
-    #     return ratio, kl
 
     def data_generator(self, rollouts):
         if self.param.NUM_MINI_BATCHES > 0:

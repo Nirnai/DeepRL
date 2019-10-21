@@ -1,13 +1,13 @@
 {
-    "BATCH_SIZE": 5000,
-    "NUM_MINI_BATCHES": 50,
+    "BATCH_SIZE": 2048,
+    "NUM_MINI_BATCHES": 32,
     "CLIP": 0.2,
     "MAX_KL_DIV": 0.01,
     "ENTROPY_COEFFICIENT": 0.0,
     "CLIPPED_VALUE": false,
     "ADVANTAGE_NORMALIZATION": true,
     "EARLY_STOPPING": false,
-    "LR_SCHEDULE": true,
+    "LR_SCHEDULE": false,
     "MAX_ENTROPY": false,
     "MAX_GRAD_NORM": 0.5,
     "DELAYED_START": 0,
@@ -31,9 +31,8 @@
             64,
             64
         ],
-        "INIT_HIDDEN": "default",
-        "INIT_OUTPUT": "default",
-        "LEARNING_RATE": 1e-3,
+        "INIT": "naive",
+        "LEARNING_RATE": 3e-4,
         "WEIGHT_DECAY": 0.0,
         "DROPOUT": false,
         "BATCHNORM": false
@@ -44,9 +43,8 @@
             64,
             64
         ],
-        "INIT_HIDDEN": "default",
-        "INIT_OUTPUT": "default",
-        "LEARNING_RATE": 1e-3,
+        "INIT": "naive",
+        "LEARNING_RATE": 3e-4,
         "WEIGHT_DECAY": 0.0,
         "DROPOUT": false,
         "BATCHNORM": false

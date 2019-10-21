@@ -1,16 +1,22 @@
 import os
 import gym
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 from evaluator.plot import plot_dataset, compare_datasets, plot, load_dataset, plot_offline, plot_final_performance
 
-data1 = 'data/PPO_CartpoleSwingup-v0_2019-10-16_00-00/returns_online.npz'
-data2 = 'data/PPO_CartpoleSwingup-v0_2019-10-15_19-18/returns_online.npz'
-data3 = 'data/PPO_cartpoleswingup_2019-10-17_12-18/returns_online.npz'
-
-compare_datasets([data1, data2, data3],goal=1000)
-
-plot_dataset(data3, goal=1000)
+returns = 'data/init/PPO_acrobotswingup_2019-10-20_22-23/returns_online.npz'
+returns_offline = 'data/init/PPO_acrobotswingup_2019-10-20_22-23/returns_offline.npz'
+std_offline = 'data/init/PPO_acrobotswingup_2019-10-20_22-23/deviation_offline.npz'
+entropy = 'data/init/PPO_acrobotswingup_2019-10-20_22-23/entropy.npz'
+kl = 'data/init/PPO_acrobotswingup_2019-10-20_22-23/kl.npz'
+H = load_dataset(entropy)
+std = np.exp(H - 0.5 - 0.5 * math.log(2 * math.pi))
+plot_dataset(returns, goal=1000, statistic='normal')
+plot_dataset(entropy,statistic='normal')
+plot(std)
+plot_dataset(kl, goal=0.01, statistic='normal')
+plot_offline([returns_offline],[std_offline],1)
 
 # mean_files = [ 'data/PPO_CartpoleSwingup-v0_2019-10-15_15-08/final_returns.npz',
 #                'data/PPO_CartpoleSwingup-v0_2019-10-15_19-18/final_returns.npz'
@@ -36,18 +42,6 @@ plot_dataset(data3, goal=1000)
 # fig, ax = plt.subplots()
 # ax.bar(x, means, yerr=stds, align='center', alpha=0.5, ecolor='black', capsize=10)
 
-data4 = 'data/PPO_CartpoleSwingup-v0_2019-10-16_00-00/returns_offline.npz'
-data5 = 'data/PPO_CartpoleSwingup-v0_2019-10-16_00-00/deviation_offline.npz'
-data6 = 'data/PPO_CartpoleSwingup-v0_2019-10-15_19-18/returns_offline.npz'
-data7 = 'data/PPO_CartpoleSwingup-v0_2019-10-15_19-18/deviation_offline.npz'
-data8 = 'data/PPO_cartpoleswingup_2019-10-17_12-18/returns_offline.npz'
-data9 = 'data/PPO_cartpoleswingup_2019-10-17_12-18/deviation_offline.npz'
-plot_offline([data4, data6, data8],[data5, data7, data9],1)
-
-
-# data13 = 'data/PPO_CartpoleSwingup-v0_2019-10-16_00-00/explained_variance.npz'
-# data14 = 'data/PPO_CartpoleSwingup-v0_2019-10-16_12-26/explained_variance.npz'
-# compare_datasets([data13,data14],goal=1)
 
 plt.show()
 
