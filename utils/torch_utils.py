@@ -61,13 +61,9 @@ def orthogonal(m):
         nn.init.orthogonal_(m.weight, gain=nn.init.calculate_gain('tanh'))
         nn.init.zeros_(m.bias)
 
-def default(m):
-    return
-
 inits = {
     'naive' : naive,
     'xavier': xavier,
     'kaiming': kaiming,
-    'orthogonal': orthogonal,
-    'default' : default,
+    'orthogonal': orthogonal
 }
