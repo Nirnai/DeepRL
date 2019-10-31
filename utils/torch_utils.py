@@ -15,6 +15,7 @@ def make_mlp(params, output_dim):
                     batchnorm=bnorm,
                     dropout=dout).apply(inits[init]) for in_, out_ in zip(ins, outs)]
     layers.append(layer(outs[-1], output_dim).apply(inits[init]))
+    # layers.insert(0, nn.BatchNorm1d(ins[0], momentum=None, affine=False))
     return unwrap_layers(nn.Sequential(*layers))
 
 

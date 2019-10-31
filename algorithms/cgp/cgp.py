@@ -9,8 +9,8 @@ from utils.values_functions import ActionValueFunction
 import time
 
 class CGP(BaseRL, OffPolicy):
-    def __init__(self, env):
-        super(CGP, self).__init__(env, device="cpu")        
+    def __init__(self, env, param=None):
+        super(CGP, self).__init__(env, param=param ,device="cpu")        
         self.name = "CGP"
         self.Q = ActionValueFunction(self.param.qvalue, self.device)
         self.actor_cem = CrossEntropyGuidedPolicy(self.Q.Q1, self.param.policy, self.device)

@@ -4,15 +4,16 @@
     "CG_DAMPING": 0.1,
     "DELTA": 0.01,
     "EPOCHS": 1,
-    "GAMMA": 0.995,
-    "LAMBDA": 0.97,
+    "GAMMA": 0.99,
+    "LAMBDA": 0.95,
     "NUM_BACKTRACK": 10,
     "NUM_CG_ITER": 10,
     "TAU": 0.01,
     "VALUE_EPOCHS": 80,
     "DELAYED_START": 0,
+    "ENTROPY_COEFFICIENT": 0,
     "MAX_ENTROPY": false,
-    "ADVANTAGE_NORMALIZATION": true,
+    "ADVANTAGE_NORMALIZATION": false,
     "evaluation": {
         "avaraging_window": 20,
         "disturbance_intervall": 10,
@@ -28,11 +29,11 @@
             64
         ],
         "LEARNING_RATE": 0,
-        "INIT_HIDDEN": "default",
-        "INIT_OUTPUT": "default",
+        "INIT": "xavier",
         "WEIGHT_DECAY": 0.0,
         "DROPOUT": false,
-        "BATCHNORM": false
+        "BATCHNORM": false,
+        "MAX_GRAD_NORM": 0
     },
     "value": {
         "ACTIVATION": "Tanh",
@@ -41,8 +42,7 @@
             64
         ],
         "LEARNING_RATE": 0.001,
-        "INIT_HIDDEN": "default",
-        "INIT_OUTPUT": "default",
+        "INIT": "xavier",
         "WEIGHT_DECAY": 0.0,
         "DROPOUT": false,
         "BATCHNORM": false

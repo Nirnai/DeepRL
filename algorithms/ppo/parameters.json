@@ -3,13 +3,12 @@
     "NUM_MINI_BATCHES": 32,
     "CLIP": 0.2,
     "MAX_KL_DIV": 0.01,
-    "ENTROPY_COEFFICIENT": 0.0,
+    "ENTROPY_COEFFICIENT": 0,
     "CLIPPED_VALUE": false,
-    "ADVANTAGE_NORMALIZATION": true,
+    "ADVANTAGE_NORMALIZATION": false,
     "EARLY_STOPPING": false,
     "LR_SCHEDULE": false,
     "MAX_ENTROPY": false,
-    "MAX_GRAD_NORM": 0.5,
     "DELAYED_START": 0,
     "EPOCHS": 10,
     "GAMMA": 0.99,
@@ -31,9 +30,10 @@
             64,
             64
         ],
-        "INIT": "naive",
+        "INIT": "orthogonal",
         "LEARNING_RATE": 3e-4,
-        "WEIGHT_DECAY": 0.0,
+        "WEIGHT_DECAY": 0,
+        "MAX_GRAD_NORM": 0,
         "DROPOUT": false,
         "BATCHNORM": false
     },
@@ -43,9 +43,9 @@
             64,
             64
         ],
-        "INIT": "naive",
+        "INIT": "orthogonal",
         "LEARNING_RATE": 3e-4,
-        "WEIGHT_DECAY": 0.0,
+        "WEIGHT_DECAY": 0,
         "DROPOUT": false,
         "BATCHNORM": false
     }

@@ -9,19 +9,18 @@ from utils.values_functions import ActionValueFunction
 from utils.helper import soft_target_update
 
 class TD3(BaseRL, OffPolicy):
-    def __init__(self, env):
-        super(TD3, self).__init__(env)
+    def __init__(self, env, param=None):
+        super(TD3, self).__init__(env, param=param)
         self.name = "TD3"
         self.critic = ActionValueFunction(self.param.qvalue, self.device)
         self.actor = DeterministicPolicy(self.param.policy, self.device)
-        self.actor = Boun
         self.actor_target = deepcopy(self.actor)
         self.steps = 0                    
 
     
     def act(self, state, deterministic=True):
         with torch.no_grad():
-            action = self.actor(torch.from_numpy(state).float().to(self.device))
+            action = self.actor(torch.from_numpy(state).float().to(self.device)) * torch.from_numpy(self.env.action_space.high)
         if deterministic is False:
             if self.param.POLICY_EXPLORATION_NOISE != 0:
                 action += torch.randn(action.shape).to(self.device) * self.param.POLICY_EXPLORATION_NOISE 

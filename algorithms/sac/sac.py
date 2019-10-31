@@ -9,8 +9,8 @@ from utils.policies import BoundedGaussianPolicy
 from utils.values_functions import ActionValueFunction
 
 class SAC(BaseRL, OffPolicy):
-    def __init__(self, env):
-        super(SAC, self).__init__(env)
+    def __init__(self, env, param=None):
+        super(SAC, self).__init__(env, param=param)
         self.name = 'SAC'
         self.critic = ActionValueFunction(self.param.qvalue, self.device)
         self.actor = BoundedGaussianPolicy(self.param.policy, self.device)
@@ -20,6 +20,7 @@ class SAC(BaseRL, OffPolicy):
     def act(self, state, deterministic=False):
         with torch.no_grad():
             action = self.actor(torch.from_numpy(state).float().to(self.device), deterministic=deterministic).cpu().numpy()
+            action *= self.env.action_space.high
         next_state, reward, done, _ = self.env.step(action)
         if done:
             next_state = self.env.reset() 

@@ -33,3 +33,14 @@ def bootstrap_confidance(self, data, n=1000, func=np.mean):
     low = np.percentile(means, 2.5, axis=0)
     high = np.percentile(means, 97.5, axis=0)
     return m, low, high
+
+def effect_size(mean_exp, mean_ctrl, std_exp, std_ctrl):
+    S = np.sqrt(std_ctrl**2 + std_exp**2)/2
+    return np.abs(mean_exp - mean_ctrl)/S
+
+def power(effect, n):
+    alpha = 0.05/2
+    df = n-1
+    crit = scipy.stats.t.isf(alpha, df)
+    power = scipy.stats.nct._sf(crit, df, effect*np.sqrt(n))
+    return power

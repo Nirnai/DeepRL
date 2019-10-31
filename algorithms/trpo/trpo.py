@@ -11,8 +11,8 @@ from utils.values_functions import ValueFunction
 
 
 class TRPO(BaseRL, OnPolicy):
-    def __init__(self, env):
-        super(TRPO,self).__init__(env)
+    def __init__(self, env, param=None):
+        super(TRPO,self).__init__(env, param=param)
         self.name = "TRPO"
         self.critic = ValueFunction(self.param.value, self.device)
         self.actor = GaussianPolicy(self.param.policy, self.device)
@@ -46,7 +46,6 @@ class TRPO(BaseRL, OnPolicy):
     @OnPolicy.loop
     def learn(self):
         rollouts = self.onPolicyData
-        # states = (rollouts['states']-rollouts['states_mean'])/rollouts['states_std']
         returns = rollouts['returns_gae']
         if self.param.ADVANTAGE_NORMALIZATION:
             rollouts['advantages'] = (rollouts['advantages'] - rollouts['advantages'].mean()) / (rollouts['advantages'].std() + 1e-5) 
@@ -58,20 +57,19 @@ class TRPO(BaseRL, OnPolicy):
                 critic_loss = F.mse_loss(values, returns)
                 self.critic.optimize(critic_loss)
             # Update Actor
-            # advantages = (advantages - advantages.mean()) / advantages.std()
+            old_log_probs = self.actor.log_prob(rollouts['states'], rollouts['actions'])
             pg = self.policy_gradient(rollouts)
             npg = self.natural_gradient(pg, rollouts)
-            parameters, stepsize = self.linesearch(npg, pg, rollouts)
+            parameters, pg_norm = self.linesearch(npg, pg, rollouts)
             self.optimize_actor(parameters)
+            log_probs = self.actor.log_prob(rollouts['states'], rollouts['actions'])
 
         metrics = dict()
         with torch.no_grad():
-            # metrics['value'] = values.mean().item()
-            # metrics['target'] = returns.mean().item()
             metrics['explained_variance'] = (1 - (rollouts['returns_mc'] - rollouts['values']).pow(2).sum()/(rollouts['returns_mc']-rollouts['returns_mc'].mean()).pow(2).sum()).item()
-            # metrics['entropy'] = self.actor.entropy(rollouts['states']).mean().item()
-            metrics['stepsize'] = stepsize.item()
-            # metrics['kl'] = total_kl.item()
+            metrics['entropy'] = self.actor.entropy(rollouts['states']).mean().item()
+            metrics['kl'] = (old_log_probs-log_probs).mean()
+            metrics['pg_norm'] = pg_norm
         return metrics
 
     ################################################################
@@ -83,6 +81,7 @@ class TRPO(BaseRL, OnPolicy):
     def policy_gradient(self, rollouts):
         log_probs = self.actor.log_prob(rollouts['states'], rollouts['actions'])
         pg_objective = (log_probs * rollouts['advantages']).mean()
+        pg_objective -= self.param.ENTROPY_COEFFICIENT * rollouts['log_probs'].mean()
         return parameters_to_vector(torch.autograd.grad(pg_objective, self.actor.parameters()))
 
     def natural_gradient(self, pg, rollouts):

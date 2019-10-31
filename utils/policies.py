@@ -13,6 +13,7 @@ class GaussianPolicy(nn.Module):
         self.mean = make_mlp(params, params['ARCHITECTURE'][-1])
         self.log_std = nn.Parameter(torch.ones(params['ARCHITECTURE'][-1]))
         self.optimizer = optim.Adam(self.parameters(), lr=params['LEARNING_RATE'], weight_decay=params['WEIGHT_DECAY'])
+        self.max_grad = params['MAX_GRAD_NORM']
         self.device = device
         self.to(self.device)
 
@@ -36,11 +37,22 @@ class GaussianPolicy(nn.Module):
     def entropy(self, state):
         policy = self.policy(state)
         return policy.entropy()
+    
+    def get_grad_norm(self):
+        total_norm = 0
+        for p in self.parameters():
+            param_norm = p.grad.data.norm(2)
+            total_norm += param_norm.item() ** 2
+        return total_norm ** (1. / 2)
 
     def optimize(self, loss):
         self.optimizer.zero_grad()
         loss.backward()
+        if self.max_grad > 0:
+            nn.utils.clip_grad_norm_(self.parameters(), self.max_grad)
+        pg_norm = self.get_grad_norm()
         self.optimizer.step()
+        return pg_norm
 
 
 class BoundedGaussianPolicy(GaussianPolicy):
