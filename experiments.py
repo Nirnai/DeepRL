@@ -68,8 +68,12 @@ def normalize(alg):
 
 if __name__ == '__main__':
     # baseline(PPO)
+<<<<<<< HEAD
     init(TRPO)
     # normalize(PPO)
+=======
+    init(TD3)
+>>>>>>> f7d9f17af57c70197f2eb5140a5b10344ac40710
 
 
 # def ppo_experiments(env):

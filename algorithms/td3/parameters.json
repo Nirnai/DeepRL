@@ -1,40 +1,38 @@
 {
     "qvalue" : {
         "ARCHITECTURE" : [
-            64,
-            64
+            400,
+            300
         ],
-        "INIT_HIDDEN": "default",
-        "INIT_OUTPUT": "default",
-        "ACTIVATION" : "Tanh",
+        "INIT": "naive",
+        "ACTIVATION" : "ReLU",
         "LEARNING_RATE": 1e-3, 
-        "TAU": 0.005,
+        "TAU": 5e-3,
         "WEIGHT_DECAY": 0.0,
         "DROPOUT": false,
         "BATCHNORM": false
     },
     "policy" : {
         "ARCHITECTURE" : [
-            64,
-            64
+            400,
+            300
         ],
-        "INIT_HIDDEN": "default",
-        "INIT_OUTPUT": "default",
-        "ACTIVATION" : "Tanh",
+        "INIT": "naive",
+        "ACTIVATION" : "ReLU",
         "LEARNING_RATE": 1e-3,
-        "TAU": 0.005,
+        "TAU": 5e-3,
         "WEIGHT_DECAY": 0.0,
         "DROPOUT": false,
         "BATCHNORM": false
     }, 
     "MEMORY_SIZE": 1e6,
-    "BATCH_SIZE": 64,
+    "BATCH_SIZE": 100,
     "UPDATE_STEPS": 1,
-    "GAMMA": 0.999,
+    "GAMMA": 0.99,
     "POLICY_EXPLORATION_NOISE": 0.1,
-    "POLICY_UPDATE_NOISE": 0.2,
+    "POLICY_UPDATE_NOISE": 0.0,
     "POLICY_CLIP": 0.5,
-    "POLICY_UPDATE_FREQ": 2,
+    "POLICY_UPDATE_FREQ": 1,
     "evaluation": {
         "avaraging_window": 20,
         "disturbance_intervall": 10,
