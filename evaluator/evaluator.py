@@ -40,13 +40,13 @@ class Evaluator():
 
 
     def run_statistic(self, samples=10, seed=100):
-        self.param.save_parameters(self.out_dir)
         seeds = []
         rng = np.random.RandomState(seed)
         for i in range(samples):
             seeds.append(rng.randint(0,100))
             self.sample = i
             self.reset()
+            self.alg.param.save_parameters(self.out_dir)
             self.run()
             # Save Data
             self.save_policy()

@@ -24,7 +24,8 @@
         "LEARNING_RATE": 1e-3,
         "WEIGHT_DECAY": 0.0,
         "DROPOUT": false,
-        "BATCHNORM": false
+        "BATCHNORM": false,
+        "MAX_GRAD_NORM": 0.0
     },
     "POLICY_UPDATE_FREQ" : 2,
     "MEMORY_SIZE": 1e6,

@@ -35,13 +35,13 @@ class PPO(BaseRL, OnPolicy):
     def act(self, state, deterministic=False):
         self.steps += 1
         with torch.no_grad():
+            s = torch.from_numpy(state).float().to(self.device)
             if self.steps < self.param.DELAYED_START:
                 action = self.env.action_space.sample()
             else:
-                s = torch.from_numpy(state).float().to(self.device)
                 self.actor.eval()
                 action = self.actor(s, deterministic=deterministic).cpu().numpy() 
-                a = torch.from_numpy(action).float().to(self.device)
+            a = torch.from_numpy(action).float().to(self.device)
             next_state, reward, done, _ = self.env.step(action)
            
             if not deterministic:
@@ -81,7 +81,7 @@ class PPO(BaseRL, OnPolicy):
                 kl_div = (old_log_probs-log_probs).mean()   
                 # Early Stopping            
                 if self.param.EARLY_STOPPING and kl_div > self.param.MAX_KL_DIV:
-                    print('Early stopping at epoch {} due to reaching max kl.'.format(i))
+                    # print('Early stopping at epoch {} due to reaching max kl.'.format(i))
                     break
                 actor_loss = self.clipped_policy_objective(old_log_probs, log_probs, advantages)
                 actor_loss -= self.param.ENTROPY_COEFFICIENT * log_probs.mean()

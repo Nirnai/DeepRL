@@ -60,7 +60,7 @@ print("std: {}".format(states.std(axis=0)))
 # actions = [actions1, actions2, actions3, actions4]
 # for action in actions:
 #     plt.figure()
-#     plt.hist(action.numpy(), bins='auto')
+#     plt.hist(action.numpy(), bins='auto')log_probs
 
 # actions = []
 # for i in range(1000):
