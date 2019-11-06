@@ -9,13 +9,8 @@ from utils.values_functions import ActionValueFunction
 from utils.helper import soft_target_update
 
 class TD3(BaseRL, OffPolicy):
-<<<<<<< HEAD
     def __init__(self, env, param=None):
-        super(TD3, self).__init__(env, param=param)
-=======
-    def __init__(self, env):
-        super(TD3, self).__init__(env, device='cpu')
->>>>>>> f7d9f17af57c70197f2eb5140a5b10344ac40710
+        super(TD3, self).__init__(env, param=param, device='cpu')
         self.name = "TD3"
         self.critic = ActionValueFunction(self.param.qvalue, self.device)
         self.actor = DeterministicPolicy(self.param.policy, self.device)
