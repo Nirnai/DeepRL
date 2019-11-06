@@ -1,72 +1,67 @@
-import numpy as np
+import sys
+import os
+import time
 import torch
+import gym
+import dm_control2gym
+import utils
+import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+from algorithms import TRPO, TD3, SAC, PPO, CGP
+from algorithms import HyperParameter
 
-import gym 
-import envs
-from utils.policies import GaussianPolicy
-from utils.env import getEnvInfo
-from algorithms.hyperparameter import HyperParameter
+env = dm_control2gym.make(domain_name='cartpole', task_name='balance')
+states = []
+actions = []
+for _ in range(10):
+    states.append(env.reset())
+    for _ in range(999):
+        a = env.action_space.sample()
+        s, _, _, _ = env.step(a)
+        states.append(s)
+        actions.append(a)
+states = np.stack(states)
+actions = np.stack(actions)
 
+algs = [CGP]
+for alg in algs:
+    plt.figure()
+    params_path = os.path.abspath(sys.modules[alg.__module__].__file__).split('/')
+    params_path[-1] = 'parameters.json'
+    params_path = '/'.join(params_path)
 
-env = gym.make('CartpoleSwingup-v0')
-state_dim, action_dim = getEnvInfo(env)
-
-states = np.zeros((100000, env.observation_space.shape[0]), dtype=np.float32)
-env.reset()
-for i in range(100000):
-    states[i], reward, done, _ = env.step(env.action_space.sample())
-    if done:
-        env.reset()
-print("mean: {}".format(states.mean(axis=0)))
-print("std: {}".format(states.std(axis=0)))
-
-# param = HyperParameter(path='algorithms/ppo/parameters.json')
-# models = ['value', 'qvalue', 'policy']        
-# for model in models: 
-#     if(hasattr(param, model)):
-#         attr = getattr(param, model)
-#         attr['STATE_DIM'] = state_dim
-#         attr['ACTION_DIM'] = action_dim
-#         if 'ARCHITECTURE' in attr.keys():
-#             attr['ARCHITECTURE'].insert(0, state_dim)
-#             attr['ARCHITECTURE'].append(action_dim)
-# activations = ['Tanh','ReLU']
-# initializations = ['default','xavier','kaiming','orthogonal']
-
-# for f in activations:
-#     plt.figure()
-#     for init in initializations:
-#         param.policy['ACTIVATION'] = f
-#         param.policy['INIT_HIDDEN'] = init
-#         param.policy['INIT_OUTPUT'] = init
-#         actor = GaussianPolicy(param.policy, 'cpu')
-
-#         states = []
-#         for i in range(1000):
-#             states.append(env.reset())
-#         states = np.stack(states)
-#         with torch.no_grad():
-#             states = torch.from_numpy(states).float()
-#             actions = actor(states).squeeze()
-#             log_probs = actor.log_prob(states, actions)
-#             entropy = torch.mean(-log_probs)
-#         plt.hist(actions.numpy(), bins='auto', label='{}_{}'.format(f,init))
-#     plt.legend()
-# plt.figure()
-# x = ['ppo', 'sac']
-# plt.bar(x, [entropy1, entropy3])
-
-# actions = [actions1, actions2, actions3, actions4]
-# for action in actions:
-#     plt.figure()
-#     plt.hist(action.numpy(), bins='auto')log_probs
-
-# actions = []
-# for i in range(1000):
-#     actions.append(env.action_space.sample())
-# actions = np.stack(actions)
-# plt.figure()
-# plt.hist(actions, bins='auto')
-
-plt.show()
+    inits = ['naive', 'kaiming', 'orthogonal']
+    for init in inits:
+        hist = np.zeros((100,))
+        bias = 0
+        for i in range(10):
+            param = HyperParameter(path=params_path)
+            param.policy['INIT'] = init
+            param.qvalue['INIT'] = init
+            agent = alg(env, param=param)  
+            with torch.no_grad():
+                if agent.name == 'CGP':
+                    start = time.clock()
+                    a = agent.actor_cem(states)
+                    elapsed = time.clock()
+                    elapsed = elapsed - start
+                    print("Time: {}".format(elapsed))
+                else:
+                    a = agent.actor(torch.from_numpy(states).float())
+                    if agent.name == 'TD3':
+                        a += torch.randn(a.shape) * param.POLICY_EXPLORATION_NOISE 
+                        a = a.cpu().numpy()
+                        a = np.clip(a, -1, 1)
+            h, b= np.histogram(a, density=True, bins=100, range=[-1,1])
+            bias += a.mean()
+            hist += h
+        hist = hist/10
+        bias = bias/10
+        print(bias)
+        bins = np.linspace(-1,1,100)
+        plt.title('{}'.format(agent.name))
+        plt.xlabel('action')
+        plt.ylabel('PDF')
+        plt.plot(bins, hist, label=init)
+    plt.legend()

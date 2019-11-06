@@ -7,9 +7,9 @@ from evaluator import Evaluator
 from algorithms import HyperParameter
 
 envs = [
-    ('cartpole', 'balance'),
-    ('cartpole', 'swingup'),
-    ('acrobot', 'swingup'),
+    # ('cartpole', 'balance'),
+    # ('cartpole', 'swingup'),
+    # ('acrobot', 'swingup'),
     ('cheetah', 'run'),
     ('hopper', 'hop'),
     ('walker', 'run')
@@ -41,7 +41,7 @@ def init(alg):
     if param.policy['ACTIVATION'] == 'Tanh':
         modes = ['xavier','orthogonal']
     elif param.policy['ACTIVATION'] == 'ReLU':
-        modes = ['naive', 'kaiming', 'orthogonal']
+        modes = ['kaiming', 'orthogonal']
     for mode in modes:
         param.policy['INIT'] = mode
         if hasattr(param, 'value'): 
@@ -85,8 +85,8 @@ def normalize(alg):
 
 if __name__ == '__main__':
     # baseline(PPO)
-    # init(TRPO)
-    pretraining(PPO)
+    init(TD3)
+    # pretraining(PPO)
     # normalize(PPO)
 
 

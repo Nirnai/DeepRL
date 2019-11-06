@@ -6,7 +6,7 @@ from utils.torch_utils import make_mlp
 
 class ActionValueFunction():
     def __init__(self, param, device):
-        param['ARCHITECTURE'][0] += param['ARCHITECTURE'][-1]
+        param['ARCHITECTURE'][0] = param['STATE_DIM'] + param['ACTION_DIM']
         self.Q1 = QValue(param, device)
         self.Q2 = QValue(param, device)
         self.Q1_target = QValue(param, device)
