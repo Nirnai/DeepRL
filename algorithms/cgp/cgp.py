@@ -10,7 +10,11 @@ import time
 
 class CGP(BaseRL, OffPolicy):
     def __init__(self, env, param=None):
+<<<<<<< HEAD
         super(CGP, self).__init__(env, param=param)        
+=======
+        super(CGP, self).__init__(env, param=param, device="cpu")        
+>>>>>>> 424149579945b8500b5f939b251d93ac9bcded10
         self.name = "CGP"
         self.Q = ActionValueFunction(self.param.qvalue, self.device)
         self.actor_cem = CrossEntropyGuidedPolicy(self.Q.Q1, self.param.policy, self.device)
