@@ -137,15 +137,17 @@ class CrossEntropyGuidedPolicy(nn.Module):
         if state.ndim == 2:
             mean = np.zeros((len(state), self.action_dim))
             std = np.ones((len(state), self.action_dim))
+            actions = np.random.normal(mean, std, size=(self.batch, len(mean), self.action_dim))
+            state = state.cpu().numpy()
         else:
             mean = np.array([0.0] * self.action_dim)
             std = np.array([1.0] * self.action_dim)
-        states = np.repeat(state[np.newaxis,:, :], self.batch, axis=0)
+            actions = np.random.normal(mean, std, size=(self.batch, self.action_dim))
+        states = np.repeat(np.expand_dims(state,0), self.batch, axis=0)
         for i in range(self.iterations):
-            actions = np.random.normal(mean, std, size=(self.batch, len(mean), self.action_dim))
             actions = np.tanh(actions)
             with torch.no_grad():
-                Qs = self.q_function(torch.from_numpy(states).float().to(self.device), torch.from_numpy(actions).float().to(self.device)).numpy()
+                Qs = self.q_function(torch.from_numpy(states).float().to(self.device), torch.from_numpy(actions).float().to(self.device)).cpu().numpy()
             # Qs = np.random.normal(loc=0., scale=1., size=(64,10000))
             Is = np.argpartition(Qs, self.topk, axis=0)[-self.topk:]
             if Is.ndim == 2:
@@ -154,9 +156,9 @@ class CrossEntropyGuidedPolicy(nn.Module):
                 actions_topk = np.take(actions,Is)[:,:,np.newaxis]
                 mean = actions_topk.mean(axis=0)
                 std = actions_topk.std(axis=0)
-                best_action = actions_topk[0]
+                best_action = torch.from_numpy(actions_topk[0]).float().to(self.device)
             else:
-                mean = actions[Is].mean(dim = 0)
-                std = actions[Is].std(dim = 0)
+                mean = actions[Is].mean(axis = 0)
+                std = actions[Is].std(axis = 0)
                 best_action = actions[Is[0]]
         return best_action

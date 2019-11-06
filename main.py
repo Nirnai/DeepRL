@@ -28,15 +28,15 @@ if __name__ == '__main__':
     # env = gym.make('CartpoleBalance-v0')
     # env = gym.make('WalkerWalk-v0')
     # env = gym.make('HumanoidWalk-v0')
-    env = dm_control2gym.make(domain_name="walker", task_name="run")
+    env = dm_control2gym.make(domain_name="cartpole", task_name="balance")
     # env = gym.make('ManipulatorBring_Ball-v0')
     # env = gym.wrappers.FlattenDictWrapper(env, dict_keys=['observation', 'desired_goal'])
 
     ########## Algorithm ###########
-    alg = TRPO(env)
+    # alg = TRPO(env)
     # alg = PPO(env)
     # alg = SAC(env)
-    # alg = CGP(env)
+    alg = CGP(env)
     # alg = TD3(env)    
 
     # ########### Evaluation ###########

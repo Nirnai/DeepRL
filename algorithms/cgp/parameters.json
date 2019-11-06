@@ -4,8 +4,7 @@
             400,
             300
         ],
-        "INIT_HIDDEN": "default",
-        "INIT_OUTPUT": "default",
+        "INIT": "naive",
         "ACTIVATION" : "ReLU",
         "LEARNING_RATE": 1e-3,
         "TAU": 5e-3,
@@ -18,8 +17,7 @@
             400,
             300
         ],
-        "INIT_HIDDEN": "default",
-        "INIT_OUTPUT": "default",
+        "INIT": "naive",
         "ACTIVATION" : "ReLU",
         "LEARNING_RATE": 1e-3,
         "WEIGHT_DECAY": 0.0,

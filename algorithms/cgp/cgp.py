@@ -10,11 +10,7 @@ import time
 
 class CGP(BaseRL, OffPolicy):
     def __init__(self, env, param=None):
-<<<<<<< HEAD
         super(CGP, self).__init__(env, param=param)        
-=======
-        super(CGP, self).__init__(env, param=param, device="cpu")        
->>>>>>> 424149579945b8500b5f939b251d93ac9bcded10
         self.name = "CGP"
         self.Q = ActionValueFunction(self.param.qvalue, self.device)
         self.actor_cem = CrossEntropyGuidedPolicy(self.Q.Q1, self.param.policy, self.device)
@@ -28,14 +24,14 @@ class CGP(BaseRL, OffPolicy):
             if deterministic:
                 action = self.actor(torch.from_numpy(state).float().to(self.device)).cpu().numpy()
             else:    
-                action = self.actor_cem(torch.from_numpy(state).float().to(self.device))
-                if self.param.POLICY_EXPLORATION_NOISE != 0:
-                    action += torch.randn(action.shape).to(self.device) * self.param.POLICY_EXPLORATION_NOISE 
-                    action = action.cpu().numpy()
-                    action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
-                else:
-                    action = action.cpu().numpy()
-                    action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
+                action = self.actor_cem(state)
+                # if self.param.POLICY_EXPLORATION_NOISE != 0:
+                #     action += torch.randn(action.shape).to(self.device) * self.param.POLICY_EXPLORATION_NOISE 
+                #     action = action.cpu().numpy()
+                #     action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
+                # else:
+                    # action = action.cpu().numpy()
+                    # action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
         next_state, reward, done, _ = self.env.step(action)
         self.memory.store(state, action, reward, next_state, done) 
         return next_state, reward, done
