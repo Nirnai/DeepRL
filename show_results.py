@@ -43,22 +43,22 @@ from evaluator.plot import plot_dataset, plot_learning_curves, load_dataset, plo
 # # plot_final_performance(data, x=labels)
 
 
-returns =  [    'data/external69/init/naive/TD3_cartpolebalance/returns_offline.npz',
-                'data/external69/init/kaiming/TD3_cartpolebalance/returns_offline.npz',
-                'data/external69/init/orthogonal/TD3_cartpolebalance/returns_offline.npz']
+returns =  [    'data/external69/init/kaiming/TD3_cheetahrun_2019-11-02_21-38/returns_offline.npz',
+                'data/external69/init/naive/TD3_cheetahrun_2019-10-31_12-11/returns_offline.npz',
+                'data/external69/init/orthogonal/TD3_cheetahrun_2019-11-05_07-07/returns_offline.npz']
 data = []
 for path in returns:
     data.append(load_dataset(path))
-plot_learning_curves(data, interval='t')
+plot_learning_curves(data, interval='bs')
 # plot_final_performance(data, x=labels)
 
-returns =  [    'data/external69/init/naive/TD3_cartpoleswingup/returns_offline.npz',
-                'data/external69/init/kaiming/TD3_cartpoleswingup/returns_offline.npz',
-                'data/external69/init/orthogonal/TD3_cartpoleswingup/returns_offline.npz']
-data = []
-for path in returns:
-    data.append(load_dataset(path))
-plot_learning_curves(data, interval='t')
+# returns =  [    'data/external69/init/naive/TD3_cartpoleswingup/returns_offline.npz',
+#                 'data/external69/init/kaiming/TD3_cartpoleswingup/returns_offline.npz',
+#                 'data/external69/init/orthogonal/TD3_cartpoleswingup/returns_offline.npz']
+# data = []
+# for path in returns:
+#     data.append(load_dataset(path))
+# plot_learning_curves(data, interval='t')
 
 
 # returns =  [    'data/init/naive/TRPO_cartpolebalance_2019-10-29_11-39/kl.npz']

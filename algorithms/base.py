@@ -27,11 +27,12 @@ class BaseRL(metaclass=ABCMeta):
         for model in models: 
             if(hasattr(self.param, model)):
                 attr = getattr(self.param, model)
-                attr['STATE_DIM'] = self.state_dim
-                attr['ACTION_DIM'] = self.action_dim
-                if 'ARCHITECTURE' in attr.keys():
-                    attr['ARCHITECTURE'].insert(0, self.state_dim)
-                    attr['ARCHITECTURE'].append(self.action_dim)
+                if not 'STATE_DIM' in attr.keys():
+                    attr['STATE_DIM'] = self.state_dim
+                    attr['ACTION_DIM'] = self.action_dim
+                    if 'ARCHITECTURE' in attr.keys():
+                        attr['ARCHITECTURE'].insert(0, self.state_dim)
+                        attr['ARCHITECTURE'].append(self.action_dim)
         super(BaseRL, self).__init__(env, self.rng, self.param, device)
 
     @abstractmethod
@@ -61,7 +62,7 @@ class BaseRL(metaclass=ABCMeta):
         # self.rng.seed(seed)
 
     def reset(self):
-        self.__init__(self.env)
+        self.__init__(self.env, param=self.param)
 
 class OnPolicy():
     def __init__(self, env, rng, param, device):

@@ -7,11 +7,11 @@ from evaluator import Evaluator
 from algorithms import HyperParameter
 
 envs = [
-    # ('cartpole', 'balance'),
-    # ('cartpole', 'swingup'),
-    # ('acrobot', 'swingup'),
-    # ('cheetah', 'run'),
-    # ('hopper', 'hop'),
+    ('cartpole', 'balance'),
+    ('cartpole', 'swingup'),
+    ('acrobot', 'swingup'),
+    ('cheetah', 'run'),
+    ('hopper', 'hop'),
     ('walker', 'run')
 ]
 
@@ -39,12 +39,12 @@ def init(alg):
     params_path = '/'.join(params_path)
     param = HyperParameter(path=params_path)
     if param.policy['ACTIVATION'] == 'Tanh':
-        modes = ['naive', 'xavier', 'orthogonal']
+        modes = ['xavier','orthogonal']
     elif param.policy['ACTIVATION'] == 'ReLU':
         modes = ['naive', 'kaiming', 'orthogonal']
     for mode in modes:
         param.policy['INIT'] = mode
-        if hasattr(param, 'value'):
+        if hasattr(param, 'value'): 
             param.value['INIT'] = mode
         elif hasattr(param, 'qvalue'):
             param.qvalue['INIT'] = mode
@@ -53,6 +53,23 @@ def init(alg):
             agent = alg(env, param=param)
             evl = Evaluator(agent, 'data/init/'+ mode)
             evl.run_statistic(samples=20, seed=0)
+
+def pretraining(alg):
+    params_path = os.path.abspath(sys.modules[alg.__module__].__file__).split('/')
+    params_path[-1] = 'parameters.json'
+    params_path = '/'.join(params_path)
+    param = HyperParameter(path=params_path)
+    param.policy['INIT'] = 'xavier'
+    if hasattr(param, 'value'): 
+        param.value['INIT'] = 'xavier'
+    elif hasattr(param, 'qvalue'):
+        param.qvalue['INIT'] = 'xavier'
+    param.DELAYED_START = 50000
+    for domain, task in envs:
+        env = dm_control2gym.make(domain_name=domain, task_name=task)
+        agent = alg(env, param=param)
+        evl = Evaluator(agent, 'data/delayedStart/')
+        evl.run_statistic(samples=20, seed=0)
 
 def normalize(alg):
     import sys
@@ -68,12 +85,9 @@ def normalize(alg):
 
 if __name__ == '__main__':
     # baseline(PPO)
-<<<<<<< HEAD
-    init(TRPO)
+    # init(TRPO)
+    pretraining(PPO)
     # normalize(PPO)
-=======
-    init(TD3)
->>>>>>> f7d9f17af57c70197f2eb5140a5b10344ac40710
 
 
 # def ppo_experiments(env):
