@@ -47,7 +47,7 @@ def get_labels(paths):
         labels.append(l[2])
     return labels, experiment, alg, task
 
-def plot_learning_curves(datas, interval='t'):
+def plot_learning_curves(datas, labels=None, interval='t'):
     fig, ax = plt.subplots(1,1,figsize=set_size(width))
     for data in datas:
         x = np.linspace(0,1000, data.shape[1])
@@ -69,6 +69,7 @@ def plot_learning_curves(datas, interval='t'):
         ax.plot(x,means)
         ax.fill_between(x, low, high, alpha=0.2)
         ax.set_ylim([0,1200])
+    return fig, ax
 
 
 def plot_final_performance(datas,x=None,interval='t'):

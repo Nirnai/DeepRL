@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributions as dist
 import torch.optim as optim
+import numpy as np
 from utils.helper import soft_target_update
 from utils.torch_utils import make_mlp
 
@@ -106,29 +107,56 @@ class CrossEntropyGuidedPolicy(nn.Module):
         self.device = device
         self.to(self.device)
 
+    # def forward(self, state):
+    #     if state.dim() == 2:
+    #         mean = torch.zeros(state.shape[0], self.action_dim).to(self.device)
+    #         std = torch.ones(state.shape[0], self.action_dim).to(self.device)
+    #     else:
+    #         mean = torch.Tensor([0.0] * self.action_dim).to(self.device)
+    #         std = torch.Tensor([1.0] * self.action_dim).to(self.device)
+    #     states = torch.cat(self.batch*[state.unsqueeze(0)], dim=0)
+    #     for i in range(self.iterations):
+    #         p = dist.Normal(mean, std)
+    #         actions = p.sample((self.batch,))
+    #         actions = torch.tanh(actions)
+    #         with torch.no_grad():
+    #             Qs = self.q_function(states, actions)
+    #         Is = Qs.topk(self.topk , dim=0)[1]
+    #         if Is.dim() == 2:
+    #             actions_topk = torch.cat([actions[Is[:,i],i,:].unsqueeze(1) for i in torch.arange(Is.shape[1])], dim=1)
+    #             mean = actions_topk.mean(dim=0)
+    #             std = actions_topk.std(dim=0)
+    #             best_action = actions_topk[0]
+    #         else:
+    #             mean = actions[Is].mean(dim = 0)
+    #             std = actions[Is].std(dim = 0)
+    #             best_action = actions[Is[0]]
+    #     return best_action
+
     def forward(self, state):
-        if state.dim() == 2:
-            mean = torch.zeros(state.shape[0], self.action_dim).to(self.device)
-            std = torch.ones(state.shape[0], self.action_dim).to(self.device)
+        if state.ndim == 2:
+            mean = np.zeros((len(state), self.action_dim))
+            std = np.ones((len(state), self.action_dim))
         else:
-            mean = torch.Tensor([0.0] * self.action_dim).to(self.device)
-            std = torch.Tensor([1.0] * self.action_dim).to(self.device)
-        states = torch.cat(self.batch*[state.unsqueeze(0)], dim=0)
+            mean = np.array([0.0] * self.action_dim)
+            std = np.array([1.0] * self.action_dim)
+        states = np.repeat(state[np.newaxis,:, :], self.batch, axis=0)
         for i in range(self.iterations):
-            p = dist.Normal(mean, std)
-            actions = p.sample((self.batch,))
-            actions = torch.tanh(actions)
+            actions = np.random.normal(mean, std, size=(self.batch, len(mean), self.action_dim))
+            actions = np.tanh(actions)
             with torch.no_grad():
-                Qs = self.q_function(states, actions)
-            Is = Qs.topk(self.topk , dim=0)[1]
-            if Is.dim() == 2:
-                actions_topk = torch.cat([actions[Is[:,i],i,:].unsqueeze(1) for i in torch.arange(Is.shape[1])], dim=1)
-                mean = actions_topk.mean(dim=0)
-                std = actions_topk.std(dim=0)
+                Qs = self.q_function(torch.from_numpy(states).float().to(self.device), torch.from_numpy(actions).float().to(self.device)).numpy()
+            # Qs = np.random.normal(loc=0., scale=1., size=(64,10000))
+            Is = np.argpartition(Qs, self.topk, axis=0)[-self.topk:]
+            if Is.ndim == 2:
+                _,nC,nR = actions.shape
+                Is = nC*nR*Is + nR*np.arange(nR)[:,None] + np.arange(nC)
+                actions_topk = np.take(actions,Is)[:,:,np.newaxis]
+                mean = actions_topk.mean(axis=0)
+                std = actions_topk.std(axis=0)
                 best_action = actions_topk[0]
             else:
                 mean = actions[Is].mean(dim = 0)
                 std = actions[Is].std(dim = 0)
                 best_action = actions[Is[0]]
         return best_action
-
