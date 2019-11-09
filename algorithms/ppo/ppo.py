@@ -22,6 +22,7 @@ class PPO(BaseRL, OnPolicy):
         self.name = 'PPO'
         self.critic = ValueFunction(self.param.value , self.device)
         self.actor = GaussianPolicy(self.param.policy, self.device)
+        # self.actor = BoundedGaussianPolicy(self.param.policy, self.device)
         self.steps = 0
         self.episode_steps = 0
 
@@ -66,14 +67,15 @@ class PPO(BaseRL, OnPolicy):
             generator = self.data_generator(rollouts)
             for mini_batch in generator:
                 s, a, returns, old_values, old_log_probs, advantages = mini_batch
-                # Critic Step
-                self.critic.train()
-                values = self.critic(s)
-                if self.param.CLIPPED_VALUE:
-                    critic_loss = self.clipped_value_loss(old_values, values, returns)
-                else:
-                    critic_loss = F.mse_loss(values, returns)
-                self.critic.optimize(critic_loss)
+                for _ in range(self.param.VALUE_EPOCHS):
+                    # Critic Step
+                    self.critic.train()
+                    values = self.critic(s)
+                    if self.param.CLIPPED_VALUE:
+                        critic_loss = self.clipped_value_loss(old_values, values, returns)
+                    else:
+                        critic_loss = F.mse_loss(values, returns)
+                    self.critic.optimize(critic_loss)
                 
                 # Actor Step
                 self.actor.train()
@@ -88,9 +90,6 @@ class PPO(BaseRL, OnPolicy):
                 pg_norm += self.actor.optimize(actor_loss)
         self.critic_scheduler.step()
         self.actor_scheduler.step()
-        # with torch.no_grad():
-        #     pg = parameters_to_vector(torch.autograd.grad(actor_loss, self.actor.parameters(), retain_graph=True))
-        #     total_stepsize += pg.norm()
                 
                 
 

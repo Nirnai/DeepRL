@@ -96,6 +96,7 @@ class Evaluator():
     def eval_progress(self):
         if self.alg.steps % self.eval_timesteps == 0:
             self.eval_alg.actor = deepcopy(self.alg.actor)
+            self.eval_alg.env = deepcopy(self.alg.env)
             returns = []
             for episode in range(self.eval_episodes):
                 state = self.eval_alg.env.reset()

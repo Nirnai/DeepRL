@@ -29,7 +29,7 @@
             64
         ],
         "LEARNING_RATE": 0,
-        "INIT": "naive",
+        "INIT": "xavier",
         "WEIGHT_DECAY": 0.0,
         "DROPOUT": false,
         "BATCHNORM": false,
@@ -42,7 +42,7 @@
             64
         ],
         "LEARNING_RATE": 1e-3,
-        "INIT": "naive",
+        "INIT": "xavier",
         "WEIGHT_DECAY": 0.0,
         "DROPOUT": false,
         "BATCHNORM": false

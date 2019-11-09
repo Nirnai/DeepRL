@@ -4,7 +4,7 @@
             400,
             300
         ],
-        "INIT": "naive",
+        "INIT": "orthogonal",
         "ACTIVATION" : "ReLU",
         "LEARNING_RATE": 1e-3,
         "TAU": 5e-3,
@@ -17,7 +17,7 @@
             400,
             300
         ],
-        "INIT": "naive",
+        "INIT": "orthogonal",
         "ACTIVATION" : "ReLU",
         "LEARNING_RATE": 1e-3,
         "WEIGHT_DECAY": 0.0,
@@ -29,7 +29,7 @@
     },
     "MEMORY_SIZE": 1e6,
     "BATCH_SIZE": 100,
-    "UPDATE_STEPS": 1,
+    "UPDATE_STEPS": 5,
     "GAMMA": 0.99,
     "POLICY_EXPLORATION_NOISE": 0,
     "POLICY_UPDATE_NOISE":0.0,

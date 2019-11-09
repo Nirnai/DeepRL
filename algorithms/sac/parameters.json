@@ -1,12 +1,11 @@
 {
     "qvalue" : {
         "ARCHITECTURE" : [
-            64,
-            64
+            256,
+            256
         ],
-        "INIT_HIDDEN": "default",
-        "INIT_OUTPUT": "default",
-        "ACTIVATION" : "Tanh",
+        "INIT": "orthogonal",
+        "ACTIVATION" : "ReLU",
         "LEARNING_RATE": 1e-3,
         "TAU": 0.005,
         "WEIGHT_DECAY": 0.0,
@@ -15,21 +14,20 @@
     },
     "policy" : {
         "ARCHITECTURE" : [
-            64,
-            64
+            400,
+            300
         ],
-        "INIT_HIDDEN": "default",
-        "INIT_OUTPUT": "default",
-        "ACTIVATION" : "Tanh",
+        "INIT": "orthogonal",
+        "ACTIVATION" : "ReLU",
         "LEARNING_RATE": 1e-3,
         "WEIGHT_DECAY": 0.0,
         "DROPOUT": false,
         "BATCHNORM": false,
         "MAX_GRAD_NORM": 0.0
     },
-    "POLICY_UPDATE_FREQ" : 2,
+    "POLICY_UPDATE_FREQ" : 1,
     "MEMORY_SIZE": 1e6,
-    "BATCH_SIZE": 128,
+    "BATCH_SIZE": 100,
     "UPDATE_STEPS": 5,
     "GAMMA" : 0.99,
     "ALPHA": 0.2,
@@ -39,6 +37,6 @@
         "eval_episodes": 10,
         "eval_timesteps": 5000,
         "max_external_force": 1,
-        "total_timesteps": 10000
+        "total_timesteps": 1000000
     }
 }

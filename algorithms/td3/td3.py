@@ -19,18 +19,19 @@ class TD3(BaseRL, OffPolicy):
 
     
     def act(self, state, deterministic=False):
-        with torch.no_grad():
-            action = self.actor(torch.from_numpy(state).float().to(self.device)) * torch.from_numpy(self.env.action_space.high)
-        if deterministic is False:
-            if self.param.POLICY_EXPLORATION_NOISE != 0:
-                action += torch.randn(action.shape).to(self.device) * self.param.POLICY_EXPLORATION_NOISE 
-                action = action.cpu().numpy()
-                action = np.clip(action, self.env.action_space.low, self.env.action_space.high)
+        self.steps += 1
+        if self.steps < self.param.DELAYED_START:
+            action = self.env.action_space.sample()
         else:
+            with torch.no_grad():
+                action = self.actor(torch.from_numpy(state).float().to(self.device)) * torch.from_numpy(self.env.action_space.high)
+            if deterministic is False:
+                if self.param.POLICY_EXPLORATION_NOISE != 0:
+                    action += torch.randn(action.shape).to(self.device) * self.param.POLICY_EXPLORATION_NOISE 
             action = action.cpu().numpy()
+            action = np.clip(action, self.env.action_space.low, self.env.action_space.high)            
         next_state, reward, done, _ = self.env.step(action) 
         self.memory.store(state, action, reward, next_state, done)
-        self.steps += 1
         return next_state, reward, done
 
 
