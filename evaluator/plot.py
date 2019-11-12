@@ -106,8 +106,8 @@ def plot_kl(datas, interval='t'):
                 high[i] = temp.upper_bound
          
         ax.plot(x,means)
-        ax.fill_between(x, low, high, alpha=0.2)
-        ax.set_ylim([0,10])
+        # ax.fill_between(x, low, high, alpha=0.2)
+        ax.set_ylim([0,0.05])
 
 
 def set_size(width, fraction=1):

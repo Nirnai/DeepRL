@@ -32,14 +32,19 @@ from evaluator.plot import plot_dataset, plot_learning_curves, load_dataset, plo
 # data =  'data/early Stopping/PPO_cartpoleswingup_2019-10-26_08-21/returns_offline.npz'
 # plot_dataset(data)
 
-returns = [ 'data/normalize/PPO_cartpolebalance_2019-11-08_13-26/returns_online.npz']
-data = []
+returns = [ 'data/init/xavier/PPO_cartpoleswingup/returns_offline.npz']
+data = []   
 for path in returns:
     data.append(load_dataset(path))
-fig, ax = plot_learning_curves(data, interval='bs')
+fig, ax = plot_learning_curves(data, interval='t')
 
-
-
+# returns = [ 'data/normalize/TRPO_cheetahrun_2019-11-11_08-05/returns_online.npz',
+#             'data/init/orthogonal/PPO_cheetahrun_2019-11-12_07-46/returns_online.npz',
+#             'data/init/orthogonal/PPO_cheetahrun_2019-11-12_08-28/returns_online.npz']
+# data = []
+# for path in returns:
+#     data.append(load_dataset(path))
+# fig, ax = plot_learning_curves(data, interval='bs')
 
 # ##### Init #####
 # algs = ['TD3', 'TRPO', 'PPO']

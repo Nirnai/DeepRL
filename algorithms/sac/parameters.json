@@ -23,7 +23,8 @@
         "WEIGHT_DECAY": 0.0,
         "DROPOUT": false,
         "BATCHNORM": false,
-        "MAX_GRAD_NORM": 0.0
+        "MAX_GRAD_NORM": 0.0,
+        "CLIPPED_ACTION": false
     },
     "POLICY_UPDATE_FREQ" : 1,
     "MEMORY_SIZE": 1e6,

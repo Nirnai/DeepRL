@@ -7,12 +7,12 @@ from evaluator import Evaluator
 from algorithms import HyperParameter
 
 envs = [
-    ('cartpole', 'balance'),
+    # ('cartpole', 'balance'),
     ('cartpole', 'swingup'),
-    ('acrobot', 'swingup'),
+    # ('acrobot', 'swingup'),
     ('cheetah', 'run'),
-    ('hopper', 'hop'),
-    ('walker', 'run')
+    # ('hopper', 'hop'),
+    # ('walker', 'run')
 ]
 
 sparse = [
@@ -42,7 +42,7 @@ def init(alg):
     params_path = '/'.join(params_path)
     param = HyperParameter(path=params_path)
     if param.policy['ACTIVATION'] == 'Tanh':
-        modes = ['xavier','orthogonal']
+        modes = ['orthogonal']
     elif param.policy['ACTIVATION'] == 'ReLU':
         modes = ['kaiming', 'orthogonal']
     for mode in modes:
@@ -55,20 +55,20 @@ def init(alg):
             env = dm_control2gym.make(domain_name=domain, task_name=task)
             agent = alg(env, param=param)
             evl = Evaluator(agent, 'data/init/'+ mode)
-            evl.run_statistic(samples=20, seed=0)
+            evl.run_statistic(samples=5, seed=0)
 
 def pretraining(alg):
     params_path = os.path.abspath(sys.modules[alg.__module__].__file__).split('/')
     params_path[-1] = 'parameters.json'
     params_path = '/'.join(params_path)
-    param = HyperParameter(path=params_path)
-    param.policy['INIT'] = 'xavier'
-    if hasattr(param, 'value'): 
-        param.value['INIT'] = 'xavier'
-    elif hasattr(param, 'qvalue'):
-        param.qvalue['INIT'] = 'xavier'
-    param.DELAYED_START = 50000
     for domain, task in envs:
+        param = HyperParameter(path=params_path)
+        param.policy['INIT'] = 'xavier'
+        if hasattr(param, 'value'): 
+            param.value['INIT'] = 'xavier'
+        elif hasattr(param, 'qvalue'):
+            param.qvalue['INIT'] = 'xavier'
+        param.DELAYED_START = 0
         env = dm_control2gym.make(domain_name=domain, task_name=task)
         agent = alg(env, param=param)
         evl = Evaluator(agent, 'data/delayedStart/')
@@ -88,10 +88,10 @@ def normalize(alg):
 
 if __name__ == '__main__':
     # environments()
-    # baseline(PPO, 'adaptive/basic')
-    # init(TD3)
+    # baseline(PPO, 'actionbound')
+    # init(PPO)
     # pretraining(PPO)
-    normalize(TRPO)
+    normalize(TD3)
 
 
 # def ppo_experiments(env):

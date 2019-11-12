@@ -15,6 +15,9 @@ class GaussianPolicy(nn.Module):
         self.log_std = nn.Parameter(torch.ones(params['ARCHITECTURE'][-1]) * 0.0)
         self.optimizer = optim.Adam(self.parameters(), lr=params['LEARNING_RATE'], weight_decay=params['WEIGHT_DECAY'])
         self.max_grad = params['MAX_GRAD_NORM']
+        self.clipped_action = params['CLIPPED_ACTION']
+        self.action_min = -1
+        self.action_max = 1
         self.device = device
         self.to(self.device)
 
@@ -26,8 +29,18 @@ class GaussianPolicy(nn.Module):
             return policy.sample()
 
     def policy(self, state):
-        mean = self.mean(state)
-        std = torch.exp(self.log_std.expand_as(mean))
+        if self.clipped_action:
+            mean = self.mean(state)
+            mean = self.action_min + (self.action_max - self.action_min) * torch.sigmoid(mean)
+            std_min = torch.tensor(0.01)
+            std_max = torch.tensor(1.0 * (self.action_max - self.action_min))
+            max_log_std = torch.log(std_max)
+            min_log_std = torch.log(std_min)
+            std = torch.exp(min_log_std + (max_log_std - min_log_std) * torch.sigmoid(self.log_std.expand_as(mean)))
+            # std = torch.exp(self.log_std.expand_as(mean))
+        else:    
+            mean = self.mean(state)
+            std = torch.exp(self.log_std.expand_as(mean))
         policy = dist.Normal(mean, std)
         return policy
 
