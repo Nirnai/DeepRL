@@ -7,8 +7,13 @@ from evaluator import Evaluator
 from algorithms import HyperParameter
 
 envs = [
+<<<<<<< HEAD
     # ('cartpole', 'balance'),
     # ('cartpole', 'swingup'),
+=======
+    ('cartpole', 'balance'),
+    ('cartpole', 'swingup'),
+>>>>>>> 0c59c0f107a5d226f5aadb5504b3f3e777dbcef5
     ('acrobot', 'swingup'),
     ('cheetah', 'run'),
     ('hopper', 'hop'),
@@ -18,18 +23,21 @@ envs = [
 sparse = [
     ('cartpole', 'balance_sparse'),
     ('cartpole', 'swingup_sparse'),
-    ('acrobot', 'swingup_sparse'),
-    ('ball_in_cup', 'catch')
+    ('acrobot', 'swingup_sparse')
 ]
 
 algs = [TD3, CGP, SAC, TRPO, PPO]
 
+def environments():
+    for domain, task in envs:
+        env = dm_control2gym.make(domain_name=domain, task_name=task)
+        print("Actions Bounds: [{},{}]".format(env.action_space.low, env.action_space.high))
 
-def baseline(alg):
-    for domain, task in low_dim:
+def baseline(alg, directory):
+    for domain, task in envs:
         env = dm_control2gym.make(domain_name=domain, task_name=task)
         agent = alg(env)
-        evl = Evaluator(agent, 'data/baseline')
+        evl = Evaluator(agent, 'data/{}'.format(directory))
         evl.run_statistic(samples=20, seed=0)
 
 
@@ -76,7 +84,7 @@ def normalize(alg):
     import sys
     sys.path.insert(1, '/home/nirnai/Cloud/Uni/TUM/MasterThesis/python/baselines')
     import baselines.common.vec_env as venv
-    for domain, task in low_dim:
+    for domain, task in envs:
         env = dm_control2gym.make(domain_name=domain, task_name=task)
         env.num_envs = 1
         env = venv.VecNormalize(env, ob=True, ret=False)
@@ -88,7 +96,7 @@ if __name__ == '__main__':
     # baseline(PPO)
     init(CGP)
     # pretraining(PPO)
-    # normalize(PPO)
+    normalize(TRPO)
 
 
 # def ppo_experiments(env):

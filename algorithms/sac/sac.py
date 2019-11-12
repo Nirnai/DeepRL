@@ -51,7 +51,8 @@ class SAC(BaseRL, OffPolicy):
         # Return Metrics
         metrics = dict()
         if self.steps % 5000 == 0:
-            data = self.memory.sample(5000)
-            q1,_ = self.critic(data['states'], data['actions'])
-            metrics['value'] = q1.mean().item()
+            # data = self.memory.sample(5000)
+            # q1,_ = self.critic(data['states'], data['actions'])
+            # metrics['value'] = q1.mean().item()
+            metrics['entropy'] = (-self.actor.log_prob(batch['states'], batch['actions'])).mean().item()
         return metrics

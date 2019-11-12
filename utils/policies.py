@@ -12,7 +12,7 @@ class GaussianPolicy(nn.Module):
     def __init__(self, params, device):
         super(GaussianPolicy, self).__init__()
         self.mean = make_mlp(params, params['ARCHITECTURE'][-1])
-        self.log_std = nn.Parameter(torch.ones(params['ARCHITECTURE'][-1]))
+        self.log_std = nn.Parameter(torch.ones(params['ARCHITECTURE'][-1]) * 0.0)
         self.optimizer = optim.Adam(self.parameters(), lr=params['LEARNING_RATE'], weight_decay=params['WEIGHT_DECAY'])
         self.max_grad = params['MAX_GRAD_NORM']
         self.device = device
@@ -59,6 +59,7 @@ class GaussianPolicy(nn.Module):
 class BoundedGaussianPolicy(GaussianPolicy):
     def __init__(self, params, device):
         super(BoundedGaussianPolicy, self).__init__(params, device)
+        # self.log_std = nn.Parameter(torch.ones(params['ARCHITECTURE'][-1])*-0.2)
 
     def forward(self, state, deterministic=False):
         if deterministic:
@@ -138,7 +139,7 @@ class CrossEntropyGuidedPolicy(nn.Module):
             mean = np.zeros((len(state), self.action_dim))
             std = np.ones((len(state), self.action_dim))
             actions = np.random.normal(mean, std, size=(self.batch, len(mean), self.action_dim))
-            state = state.cpu().numpy()
+            # state = state.cpu().numpy()
         else:
             mean = np.array([0.0] * self.action_dim)
             std = np.array([1.0] * self.action_dim)

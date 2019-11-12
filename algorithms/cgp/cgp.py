@@ -44,7 +44,7 @@ class CGP(BaseRL, OffPolicy):
         # Target Policy Smoothing
         noise = torch.randn(batch['actions'].shape).to(self.device) * self.param.POLICY_UPDATE_NOISE
         noise = torch.clamp(noise, -self.param.POLICY_CLIP, self.param.POLICY_CLIP)
-        next_actions = self.actor_target(batch['next_states']) + noise
+        next_actions = self.actor_target(batch['next_states'].numpy()) + noise
 
         # Update Q-Function
         with torch.no_grad():
@@ -57,16 +57,16 @@ class CGP(BaseRL, OffPolicy):
         # Actor Step
         if self.steps % self.param.POLICY_UPDATE_FREQ == 0:
             actions = self.actor(batch['states'])
-            targets = self.actor_cem(batch['states'])
+            targets = self.actor_cem(batch['states'].numpy())
             actor_loss = F.mse_loss(actions, targets)
             self.actor.optimize(actor_loss)
 
         # Return Metrics
         metrics = dict()
-        if self.steps % 5000 == 0:
-            data = self.memory.sample(5000)
-            states = data['states']
-            actions = self.actor(states)
-            q, _ = self.Q(states, actions)
-            metrics['value'] = q.mean().item()
+        # if self.steps % 5000 == 0:
+            # data = self.memory.sample(5000)
+            # states = data['states']
+            # actions = self.actor(states)
+            # q, _ = self.Q(states, actions)
+            # metrics['value'] = q.mean().item()
         return metrics

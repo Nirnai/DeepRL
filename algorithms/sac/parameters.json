@@ -1,8 +1,13 @@
 {
     "qvalue" : {
         "ARCHITECTURE" : [
+<<<<<<< HEAD
             400,
             300
+=======
+            256,
+            256
+>>>>>>> 0c59c0f107a5d226f5aadb5504b3f3e777dbcef5
         ],
         "INIT": "orthogonal",
         "ACTIVATION" : "ReLU",
@@ -38,6 +43,6 @@
         "eval_episodes": 10,
         "eval_timesteps": 5000,
         "max_external_force": 1,
-        "total_timesteps": 10000
+        "total_timesteps": 1000000
     }
 }
