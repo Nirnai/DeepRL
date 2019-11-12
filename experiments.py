@@ -9,7 +9,7 @@ from algorithms import HyperParameter
 envs = [
     # ('cartpole', 'balance'),
     # ('cartpole', 'swingup'),
-    # ('acrobot', 'swingup'),
+    ('acrobot', 'swingup'),
     ('cheetah', 'run'),
     ('hopper', 'hop'),
     ('walker', 'run')
@@ -39,16 +39,17 @@ def init(alg):
     params_path = '/'.join(params_path)
     param = HyperParameter(path=params_path)
     if param.policy['ACTIVATION'] == 'Tanh':
-        modes = ['xavier','orthogonal']
+        modes = ['naive', 'xavier','orthogonal']
     elif param.policy['ACTIVATION'] == 'ReLU':
-        modes = ['kaiming', 'orthogonal']
-    for mode in modes:
-        param.policy['INIT'] = mode
-        if hasattr(param, 'value'): 
-            param.value['INIT'] = mode
-        elif hasattr(param, 'qvalue'):
-            param.qvalue['INIT'] = mode
-        for domain, task in envs:
+        modes = ['naive']#,'kaiming', 'orthogonal']
+    for domain, task in envs:
+        param = HyperParameter(path=params_path)
+        for mode in modes:
+            param.policy['INIT'] = mode
+            if hasattr(param, 'value'): 
+                param.value['INIT'] = mode
+            elif hasattr(param, 'qvalue'):
+                param.qvalue['INIT'] = mode
             env = dm_control2gym.make(domain_name=domain, task_name=task)
             agent = alg(env, param=param)
             evl = Evaluator(agent, 'data/init/'+ mode)
@@ -81,11 +82,11 @@ def normalize(alg):
         env = venv.VecNormalize(env, ob=True, ret=False)
         agent = alg(env)
         evl = Evaluator(agent, 'data/normalize')
-        evl.run_statistic(samples=20, seed=0)
+        evl.run_statistic(samples=10, seed=0)
 
 if __name__ == '__main__':
     # baseline(PPO)
-    init(TD3)
+    init(CGP)
     # pretraining(PPO)
     # normalize(PPO)
 

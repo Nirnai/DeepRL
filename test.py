@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from algorithms import TRPO, TD3, SAC, PPO, CGP
 from algorithms import HyperParameter
 
-env = dm_control2gym.make(domain_name='cartpole', task_name='balance')
+env = dm_control2gym.make(domain_name='cartpole', task_name='swingup')
 states = []
 actions = []
 for _ in range(10):
@@ -32,7 +32,7 @@ for alg in algs:
     params_path = '/'.join(params_path)
 
     inits = ['naive', 'kaiming', 'orthogonal']
-    for init in inits:
+    for init in inits:  
         hist = np.zeros((100,))
         bias = 0
         for i in range(10):
@@ -43,7 +43,7 @@ for alg in algs:
             with torch.no_grad():
                 if agent.name == 'CGP':
                     start = time.clock()
-                    a = agent.actor_cem(states)
+                    a = agent.actor_cem(torch.from_numpy(states).float())
                     elapsed = time.clock()
                     elapsed = elapsed - start
                     print("Time: {}".format(elapsed))
@@ -65,3 +65,4 @@ for alg in algs:
         plt.ylabel('PDF')
         plt.plot(bins, hist, label=init)
     plt.legend()
+plt.show()
