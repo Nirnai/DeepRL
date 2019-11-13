@@ -5,7 +5,7 @@
     "MAX_KL_DIV": 0.01,
     "ENTROPY_COEFFICIENT": 0,
     "CLIPPED_VALUE": false,
-    "ADVANTAGE_NORMALIZATION": true,
+    "ADVANTAGE_NORMALIZATION": false,
     "EARLY_STOPPING": false,
     "LR_SCHEDULE": false,
     "MAX_ENTROPY": false,
@@ -33,7 +33,7 @@
         "INIT": "xavier",
         "LEARNING_RATE": 3e-4,
         "WEIGHT_DECAY": 0,
-        "MAX_GRAD_NORM": 40,
+        "MAX_GRAD_NORM": 0,
         "CLIPPED_ACTION": false,
         "DROPOUT": false,
         "BATCHNORM": false

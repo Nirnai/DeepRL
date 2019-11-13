@@ -38,8 +38,8 @@ class TRPO(BaseRL, OnPolicy):
                 log_pi = self.actor.log_prob(torch.from_numpy(state).float().to(self.device), 
                                             torch.from_numpy(action).float().to(self.device))
                 self.memory.store(state, action, reward, next_state, done_bool, value, next_value, log_pi)
-                if done:
-                    self.memory.process_episode(maximum_entropy=self.param.MAX_ENTROPY) 
+                # if done:
+                #     self.memory.process_episode(maximum_entropy=self.param.MAX_ENTROPY) 
         return next_state, reward, done
     
 

@@ -34,7 +34,7 @@
         "DROPOUT": false,
         "BATCHNORM": false,
         "MAX_GRAD_NORM": 0,
-        "CLIPPED_ACTION": true
+        "CLIPPED_ACTION": false
     },
     "value": {
         "ACTIVATION": "Tanh",

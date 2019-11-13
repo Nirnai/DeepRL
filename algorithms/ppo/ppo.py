@@ -22,7 +22,7 @@ class PPO(BaseRL, OnPolicy):
         self.name = 'PPO'
         self.critic = ValueFunction(self.param.value , self.device)
         self.actor = GaussianPolicy(self.param.policy, self.device)
-        # self.actor = BoundedGaussianPolicy(self.param.policy, self.device)
+        # self.init_policy()
         self.steps = 0
         self.episode_steps = 0
 
@@ -53,8 +53,8 @@ class PPO(BaseRL, OnPolicy):
                 value, next_value = self.critic(s_)
                 log_pi = self.actor.log_prob(s, a)
                 self.memory.store(state, action, reward, next_state, done_bool, value, next_value, log_pi)
-                if done:
-                    self.memory.process_episode(maximum_entropy=self.param.MAX_ENTROPY) 
+                # if done:
+                #     self.memory.process_episode(maximum_entropy=self.param.MAX_ENTROPY) 
         return next_state, reward, done
     
     @OnPolicy.loop
@@ -90,9 +90,6 @@ class PPO(BaseRL, OnPolicy):
                 pg_norm += self.actor.optimize(actor_loss)
         self.critic_scheduler.step()
         self.actor_scheduler.step()
-                
-                
-
         metrics = dict()
         with torch.no_grad():
             metrics['explained_variance'] = (1 - (rollouts['returns_mc'] - rollouts['values']).pow(2).sum()/(rollouts['returns_mc']-rollouts['returns_mc'].mean() + 1e-5).pow(2).sum()).item()
@@ -143,48 +140,16 @@ class PPO(BaseRL, OnPolicy):
             yield s, a, ret, val, pi, adv
 
 
-class Normalizer():
-    def __init__(self, num_inputs):
-        self.n = np.zeros(num_inputs)
-        self.mean = np.zeros(num_inputs)
-        self.mean_diff = np.zeros(num_inputs)
-        self.var = np.ones(num_inputs)
-
-    def observe(self, x):
-        self.n += 1.
-        last_mean = self.mean
-        self.mean += (x-self.mean)/self.n
-        self.mean_diff += (x-last_mean)*(x-self.mean)
-        self.var = (self.mean_diff/self.n).clip(min=1e-5)
-
-    def normalize(self, inputs):
-        if type(inputs) == torch.Tensor:
-            obs_std = torch.sqrt(torch.from_numpy(self.var).float())
-            obs_mean = torch.from_numpy(self.mean).float()
-        else:
-            obs_std = np.sqrt(self.var)
-            obs_mean = self.mean
-        return (inputs - obs_mean)/obs_std
-
-class MinMaxNormalizer():
-    def __init__(self, num_inputs):
-        self.min = None
-        self.max = None
-
-    def observe(self, x):
-        if self.min is None:
-            self.min = x
-        if self.max is None:
-            self.max = x
-        self.min = np.minimum(x, self.min)
-        self.max = np.maximum(x, self.max)
-    
-
-    def normalize(self, inputs):
-        if type(inputs) == torch.Tensor:
-            x_min = torch.from_numpy(self.min).float()
-            x_max = torch.from_numpy(self.max).float()
-        else:
-            x_min = self.min
-            x_max = self.max
-        return 2*(inputs-x_min)/(x_max - x_min + 1e-5)
+    def init_policy(self):
+        init_mean = 0.5 * (self.env.action_space.low + self.env.action_space.high) * np.ones(self.env.action_space.shape[0])
+        init_std =  0.5 * (self.env.action_space.high - self.env.action_space.low) * np.ones(self.env.action_space.shape[0])
+        for batchIdx in range(2000):
+            states = np.random.normal(0,1,size=[256, self.env.observation_space.shape[0]])
+            action_mean = self.actor(torch.from_numpy(states).float(), deterministic=True)
+            action_std = torch.exp(self.actor.log_std)
+            mean_target = torch.ones_like(action_mean).float() * torch.from_numpy(init_mean).float()
+            std_target = torch.from_numpy(init_std).float()
+            loss = torch.nn.functional.mse_loss(action_mean, mean_target) + \
+                torch.nn.functional.mse_loss(action_std, std_target)
+            # print(loss)
+            self.actor.optimize(loss)

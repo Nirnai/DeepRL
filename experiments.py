@@ -7,12 +7,12 @@ from evaluator import Evaluator
 from algorithms import HyperParameter
 
 envs = [
-    # ('cartpole', 'balance'),
+    ('cartpole', 'balance'),
     ('cartpole', 'swingup'),
-    # ('acrobot', 'swingup'),
+    ('acrobot', 'swingup'),
     ('cheetah', 'run'),
-    # ('hopper', 'hop'),
-    # ('walker', 'run')
+    ('hopper', 'hop'),
+    ('walker', 'run')
 ]
 
 sparse = [
@@ -33,7 +33,7 @@ def baseline(alg, directory):
         env = dm_control2gym.make(domain_name=domain, task_name=task)
         agent = alg(env)
         evl = Evaluator(agent, 'data/{}'.format(directory))
-        evl.run_statistic(samples=20, seed=0)
+        evl.run_statistic(samples=5, seed=0)
 
 
 def init(alg):
@@ -84,14 +84,14 @@ def normalize(alg):
         env = venv.VecNormalize(env, ob=True, ret=False)
         agent = alg(env)
         evl = Evaluator(agent, 'data/normalize')
-        evl.run_statistic(samples=20, seed=0)
+        evl.run_statistic(samples=10, seed=0)
 
 if __name__ == '__main__':
     # environments()
-    # baseline(PPO, 'actionbound')
+    baseline(TRPO, 'baselines')
     # init(PPO)
     # pretraining(PPO)
-    normalize(TD3)
+    # normalize(TD3)
 
 
 # def ppo_experiments(env):

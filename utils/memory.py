@@ -66,18 +66,31 @@ class Buffer():
         self.returns_gae[episode] = self.advantages[episode] + values
         self.start_idx = self.idx
 
-
+    def gae(self):
+        returns = np.zeros_like(self.rewards)
+        advantages = np.zeros_like(self.rewards)
+        lastgaelam = 0
+        lastret = 0
+        for t in reversed(range(self.idx)):
+            terminals = 1 - self.dones
+            delta = self.rewards[t] + self.gamma * terminals[t] * self.next_values[t] - self.values[t]
+            returns[t] = lastret = self.rewards[t] + self.gamma * lastret
+            advantages[t] = lastgaelam = delta + self.gamma * self.lamda * terminals[t] * lastgaelam
+        self.advantages = advantages
+        self.returns_gae = advantages + self.values
+        self.returns_mc = returns
 
     def replay(self):
         assert self.idx == self.max_size
-        if(self.start_idx < self.idx):
-            self.process_episode()
+        # if(self.start_idx < self.idx):
+        #     self.process_episode()
+        self.gae()
         self.idx, self.start_idx = 0, 0
         return dict(
             states = torch.from_numpy(self.states).to(self.device),
             actions = torch.from_numpy(self.actions).to(self.device),
             returns_mc = torch.from_numpy(self.returns_mc).to(self.device),
-            returns_gae = torch.from_numpy(self.returns_mc).to(self.device),
+            returns_gae = torch.from_numpy(self.returns_gae).to(self.device),
             advantages = torch.from_numpy(self.advantages).to(self.device),
             values = torch.from_numpy(self.values).to(self.device),
             log_probs = torch.from_numpy(self.log_probs).to(self.device)
