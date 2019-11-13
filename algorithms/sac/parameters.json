@@ -1,8 +1,13 @@
 {
     "qvalue" : {
         "ARCHITECTURE" : [
+<<<<<<< HEAD
+            400,
+            300
+=======
             256,
             256
+>>>>>>> 0c59c0f107a5d226f5aadb5504b3f3e777dbcef5
         ],
         "INIT": "orthogonal",
         "ACTIVATION" : "ReLU",
@@ -27,6 +32,7 @@
         "CLIPPED_ACTION": false
     },
     "POLICY_UPDATE_FREQ" : 1,
+    "POLICY_UPDATE_NOISE":0.0,
     "MEMORY_SIZE": 1e6,
     "BATCH_SIZE": 100,
     "UPDATE_STEPS": 5,

@@ -42,16 +42,17 @@ def init(alg):
     params_path = '/'.join(params_path)
     param = HyperParameter(path=params_path)
     if param.policy['ACTIVATION'] == 'Tanh':
-        modes = ['orthogonal']
+        modes = ['naive', 'xavier','orthogonal']
     elif param.policy['ACTIVATION'] == 'ReLU':
-        modes = ['kaiming', 'orthogonal']
-    for mode in modes:
-        param.policy['INIT'] = mode
-        if hasattr(param, 'value'): 
-            param.value['INIT'] = mode
-        elif hasattr(param, 'qvalue'):
-            param.qvalue['INIT'] = mode
-        for domain, task in envs:
+        modes = ['naive']#,'kaiming', 'orthogonal']
+    for domain, task in envs:
+        param = HyperParameter(path=params_path)
+        for mode in modes:
+            param.policy['INIT'] = mode
+            if hasattr(param, 'value'): 
+                param.value['INIT'] = mode
+            elif hasattr(param, 'qvalue'):
+                param.qvalue['INIT'] = mode
             env = dm_control2gym.make(domain_name=domain, task_name=task)
             agent = alg(env, param=param)
             evl = Evaluator(agent, 'data/init/'+ mode)
