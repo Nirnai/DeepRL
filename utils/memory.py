@@ -73,7 +73,7 @@ class Buffer():
         lastret = 0
         for t in reversed(range(self.idx)):
             terminals = 1 - self.dones
-            delta = self.rewards[t] + self.gamma * terminals[t] * self.next_values[t] - self.values[t]
+            delta = self.rewards[t] + self.gamma * self.next_values[t] - self.values[t]
             returns[t] = lastret = self.rewards[t] + self.gamma * lastret
             advantages[t] = lastgaelam = delta + self.gamma * self.lamda * terminals[t] * lastgaelam
         self.advantages = advantages
@@ -82,9 +82,9 @@ class Buffer():
 
     def replay(self):
         assert self.idx == self.max_size
-        # if(self.start_idx < self.idx):
-        #     self.process_episode()
-        self.gae()
+        if(self.start_idx < self.idx):
+            self.process_episode()
+        # self.gae()
         self.idx, self.start_idx = 0, 0
         return dict(
             states = torch.from_numpy(self.states).to(self.device),

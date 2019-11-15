@@ -8,7 +8,7 @@
     "LAMBDA": 0.95,
     "NUM_BACKTRACK": 10,
     "NUM_CG_ITER": 10,
-    "TAU": 0.01,
+    "TAU": 0.0,
     "VALUE_EPOCHS": 80,
     "DELAYED_START": 0,
     "ENTROPY_COEFFICIENT": 0,
@@ -18,7 +18,7 @@
         "avaraging_window": 20,
         "disturbance_intervall": 10,
         "eval_episodes": 10,
-        "eval_timesteps": 5000,
+        "eval_timesteps": 10000,
         "max_external_force": 1,
         "total_timesteps": 1e6
     },

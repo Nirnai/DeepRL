@@ -10,7 +10,7 @@ from utils.helper import soft_target_update
 
 class TD3(BaseRL, OffPolicy):
     def __init__(self, env, param=None):
-        super(TD3, self).__init__(env, param=param, device='cpu')
+        super(TD3, self).__init__(env, param=param)
         self.name = "TD3"
         self.critic = ActionValueFunction(self.param.qvalue, self.device)
         self.actor = DeterministicPolicy(self.param.policy, self.device)
@@ -60,8 +60,8 @@ class TD3(BaseRL, OffPolicy):
         
         # Return Metrics
         metrics = dict()
-        if self.steps % 5000 == 0:
-            data = self.memory.sample(5000)
-            q1,_ = self.critic(data['states'], data['actions'])
-            metrics['values'] = q1.mean().item()
+        # if self.steps % 1000 == 0:
+        #     data = self.memory.sample(5000)
+        #     q1,_ = self.critic(data['states'], data['actions'])
+        #     metrics['values'] = q1.mean().item()
         return metrics

@@ -32,15 +32,21 @@ from evaluator.plot import plot_dataset, plot_learning_curves, load_dataset, plo
 # data =  'data/early Stopping/PPO_cartpoleswingup_2019-10-26_08-21/returns_offline.npz'
 # plot_dataset(data)
 
-returns = [ 'data/init/xavier/PPO_cartpolebalance/returns_offline.npz',
-            'data/adaptive/basic/PPO_cartpolebalance_2019-11-13_12-44/returns_offline.npz',]
-            # 'data/init/xavier/TRPO_cartpolebalance/returns_offline.npz',
-            # 'data/baselines/TRPO_cartpolebalance_2019-11-13_14-31/returns_offline.npz']
+returns = [ 
+            # 'data/timeLimits/wrong/TRPO_cartpoleswingup_2019-11-14_05-22/returns_offline.npz',
+            'data/external5/init/naive/TD3_hopperhop_2019-11-14_03-20/returns_offline.npz',
+            'data/external5/init/kaiming/TD3_hopperhop_2019-11-15_05-55/returns_offline.npz',
+            'data/external5/init/orthogonal/TD3_hopperhop_2019-11-14_16-37/returns_offline.npz'
+            # 'data/external69/init/orthogonal/SAC_cartpolebalance_2019-11-13_22-36/returns_offline.npz'
+            # 'data/adaptive/basic/PPO_cartpoleswingup_2019-11-14_17-36/returns_offline.npz',
+            # 'data/adaptive/AdvNorm/PPO_cartpoleswingup_2019-11-15_12-30/returns_offline.npz'
+            # 'data/adaptive/AdvNorm/PPO_cartpolebalance_2019-11-15_09-15/explained_variance.npz'
+        ]
 data = []   
 for path in returns:
     data.append(load_dataset(path))
 fig, ax = plot_learning_curves(data, interval='bs')
-
+# plt.ylim([-100,1000])
 # returns = [ 'data/normalize/TRPO_cheetahrun_2019-11-11_08-05/returns_online.npz',
 #             'data/init/orthogonal/PPO_cheetahrun_2019-11-12_07-46/returns_online.npz',
 #             'data/init/orthogonal/PPO_cheetahrun_2019-11-12_08-28/returns_online.npz']

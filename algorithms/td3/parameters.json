@@ -38,7 +38,7 @@
         "avaraging_window": 20,
         "disturbance_intervall": 10,
         "eval_episodes": 10,
-        "eval_timesteps": 5000,
+        "eval_timesteps": 10000,
         "max_external_force": 1,
         "total_timesteps": 1000000.0
     }

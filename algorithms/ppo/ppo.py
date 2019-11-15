@@ -53,8 +53,8 @@ class PPO(BaseRL, OnPolicy):
                 value, next_value = self.critic(s_)
                 log_pi = self.actor.log_prob(s, a)
                 self.memory.store(state, action, reward, next_state, done_bool, value, next_value, log_pi)
-                # if done:
-                #     self.memory.process_episode(maximum_entropy=self.param.MAX_ENTROPY) 
+                if done:
+                    self.memory.process_episode(maximum_entropy=self.param.MAX_ENTROPY) 
         return next_state, reward, done
     
     @OnPolicy.loop
@@ -76,7 +76,6 @@ class PPO(BaseRL, OnPolicy):
                     else:
                         critic_loss = F.mse_loss(values, returns)
                     self.critic.optimize(critic_loss)
-                
                 # Actor Step
                 self.actor.train()
                 log_probs = self.actor.log_prob(s,a)
@@ -111,7 +110,7 @@ class PPO(BaseRL, OnPolicy):
     def clipped_value_loss(self, old_val, val, ret):
         loss = (val - ret).pow(2)
         clipped_loss = ((old_val + torch.clamp(val - old_val, -self.param.CLIP, self.param.CLIP)) - ret).pow(2)
-        return torch.min(loss, clipped_loss).mean()
+        return torch.max(loss, clipped_loss).mean()
         # clipped_val = old_val + (val - old_val).clamp(-self.param.CLIP, self.param.CLIP)
         # loss = (val - ret).pow(2)
         # clipped_loss = (clipped_val - ret).pow(2)

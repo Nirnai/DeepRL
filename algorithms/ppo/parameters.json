@@ -5,7 +5,7 @@
     "MAX_KL_DIV": 0.01,
     "ENTROPY_COEFFICIENT": 0,
     "CLIPPED_VALUE": false,
-    "ADVANTAGE_NORMALIZATION": false,
+    "ADVANTAGE_NORMALIZATION": true,
     "EARLY_STOPPING": false,
     "LR_SCHEDULE": false,
     "MAX_ENTROPY": false,
@@ -20,7 +20,7 @@
         "avaraging_window": 20,
         "disturbance_intervall": 10,
         "eval_episodes": 10,
-        "eval_timesteps": 5000,
+        "eval_timesteps": 10000,
         "max_external_force": 1,
         "total_timesteps": 1000000.0
     },

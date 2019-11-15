@@ -7,7 +7,7 @@ from evaluator import Evaluator
 from algorithms import HyperParameter
 
 envs = [
-    ('cartpole', 'balance'),
+    # ('cartpole', 'balance'),
     ('cartpole', 'swingup'),
     ('acrobot', 'swingup'),
     ('cheetah', 'run'),
@@ -44,7 +44,7 @@ def init(alg):
     if param.policy['ACTIVATION'] == 'Tanh':
         modes = ['naive', 'xavier','orthogonal']
     elif param.policy['ACTIVATION'] == 'ReLU':
-        modes = ['naive']#,'kaiming', 'orthogonal']
+        modes = ['naive','kaiming', 'orthogonal']
     for domain, task in envs:
         param = HyperParameter(path=params_path)
         for mode in modes:
@@ -56,7 +56,7 @@ def init(alg):
             env = dm_control2gym.make(domain_name=domain, task_name=task)
             agent = alg(env, param=param)
             evl = Evaluator(agent, 'data/init/'+ mode)
-            evl.run_statistic(samples=5, seed=0)
+            evl.run_statistic(samples=10, seed=0)
 
 def pretraining(alg):
     params_path = os.path.abspath(sys.modules[alg.__module__].__file__).split('/')
@@ -64,16 +64,11 @@ def pretraining(alg):
     params_path = '/'.join(params_path)
     for domain, task in envs:
         param = HyperParameter(path=params_path)
-        param.policy['INIT'] = 'xavier'
-        if hasattr(param, 'value'): 
-            param.value['INIT'] = 'xavier'
-        elif hasattr(param, 'qvalue'):
-            param.qvalue['INIT'] = 'xavier'
-        param.DELAYED_START = 0
+        param.DELAYED_START = 10000
         env = dm_control2gym.make(domain_name=domain, task_name=task)
         agent = alg(env, param=param)
         evl = Evaluator(agent, 'data/delayedStart/')
-        evl.run_statistic(samples=20, seed=0)
+        evl.run_statistic(samples=10, seed=0)
 
 def normalize(alg):
     import sys
@@ -89,94 +84,8 @@ def normalize(alg):
 
 if __name__ == '__main__':
     # environments()
-    baseline(TRPO, 'baselines')
-    # init(PPO)
-    # pretraining(PPO)
+    baseline(PPO, 'adaptive/all')
+    # init(TRPO)
+    # pretraining(TD3)
     # normalize(TD3)
-
-
-# def ppo_experiments(env):
-#     env = gym.make('CartpoleSwingup-v0')
-#     state_dim, action_dim = getEnvInfo(env)
-
-#     param = HyperParameter(path='algorithms/ppo/parameters.json')
-#     models = ['value', 'qvalue', 'policy']        
-#     for model in models: 
-#         if(hasattr(param, model)):
-#             attr = getattr(param, model)
-#             attr['STATE_DIM'] = state_dim
-#             attr['ACTION_DIM'] = action_dim
-#             if 'ARCHITECTURE' in attr.keys():
-#                 attr['ARCHITECTURE'].insert(0, state_dim)
-#                 attr['ARCHITECTURE'].append(action_dim)
-#     activations = ['Tanh','ReLU']
-#     initializations = ['default','xavier','kaiming','orthogonal']
-
-
-# def qvalue_architecture(alg):
-#     param_path = 'algorithms/{}/parameters.json'.format(alg.name.lower())
-#     p = HyperParameter(path=param_path)
-#     archs = [50,100,200,300,500]
-#     for arch in archs:
-#         path = 'data/qvalue_architecture/{}/{}'.format(alg.name.lower(), str(arch))
-#         p.qvalue['ARCHITECTURE'] = [arch, arch]
-#         if not os.path.isdir(path):  
-#             os.mkdir(path)
-#         p.save_parameters(path)
-#         p.save_parameters(param_path) 
-#         e = Evaluator(alg, path)
-#         e.run_statistic(samples=5, seed=100)
-
-# def value_architecture(alg):
-#     param_path = 'algorithms/{}/parameters.json'.format(alg.name.lower())
-#     p = HyperParameter(path=param_path)
-#     p.policy['ARCHITECTURE'] = [32, 32]
-#     archs = [4,8,16,32,64,128,256]
-#     for arch in archs:
-#         path = 'data/value_architecture/{}/{}'.format(alg.name.lower(), str(arch))
-#         p.value['ARCHITECTURE'] = [arch,arch]
-#         if not os.path.isdir(path):  
-#             os.makedirs(path)
-#         p.save_parameters(path + '/parameters.json')
-#         p.save_parameters(param_path) 
-#         e = Evaluator(alg, path)
-#         e.run_statistic(samples=5, seed=100)
-
-# def policy_architecture(alg):
-#     param_path = 'algorithms/{}/parameters.json'.format(alg.name.lower())
-#     p = HyperParameter(path=param_path)
-#     archs = [4,8,16,32,64,128,256]
-#     for arch in archs:
-#         path = 'data/policy_architecture/{}/{}'.format(alg.name.lower(), str(arch))
-#         p.policy['ARCHITECTURE'] = [arch, arch]
-#         if not os.path.isdir(path):  
-#             os.mkdir(path)
-#         p.save_parameters(path)
-#         p.save_parameters(param_path) 
-#         e = Evaluator(alg, path)
-#         e.run_statistic(samples=5, seed=100)
-
-
-# def activation_function(alg):
-#     pass
-
-# def advantage_normalization(alg):
-#     pass
-
-# def early_stopping(alg):
-#     pass
-
-# def initialization_PG(alg):
-#     cases = ['none', 'xavier', 'kaiming', 10000, 50000, 100000, 200000]
-
-# def initialization_Q(alg):
-#     cases = ['none', 'xavier', 'kaiming', 'late_start', 'optimistic']
-
-# def bootstrapping(alg):
-#     pass
-
-# def explorationPG(alg):
-#     cases = ['none','small_output','max_entropy','reg_entropy']
-
-
 
