@@ -34,9 +34,10 @@ from evaluator.plot import plot_dataset, plot_learning_curves, load_dataset, plo
 
 returns = [ 
             # 'data/timeLimits/wrong/TRPO_cartpoleswingup_2019-11-14_05-22/returns_offline.npz',
-            'data/external5/init/naive/TD3_hopperhop_2019-11-14_03-20/returns_offline.npz',
-            'data/external5/init/kaiming/TD3_hopperhop_2019-11-15_05-55/returns_offline.npz',
-            'data/external5/init/orthogonal/TD3_hopperhop_2019-11-14_16-37/returns_offline.npz'
+            # 'data/adaptive/KLStopping/PPO_cartpolebalance_2019-11-17_13-47/returns_online.npz',
+            'data/init/xavier/TD3_acrobotswingup/returns_online.npz',
+            'data/external139/delayedStart/TD3_acrobotswingup_2019-11-16_07-44/returns_offline.npz',
+            # 'data/external69/init/orthogonal/SAC_acrobotswingup_2019-11-18_04-15/returns_offline.npz'
             # 'data/external69/init/orthogonal/SAC_cartpolebalance_2019-11-13_22-36/returns_offline.npz'
             # 'data/adaptive/basic/PPO_cartpoleswingup_2019-11-14_17-36/returns_offline.npz',
             # 'data/adaptive/AdvNorm/PPO_cartpoleswingup_2019-11-15_12-30/returns_offline.npz'

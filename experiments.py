@@ -7,7 +7,7 @@ from evaluator import Evaluator
 from algorithms import HyperParameter
 
 envs = [
-    # ('cartpole', 'balance'),
+    ('cartpole', 'balance'),
     ('cartpole', 'swingup'),
     ('acrobot', 'swingup'),
     ('cheetah', 'run'),
@@ -84,8 +84,8 @@ def normalize(alg):
 
 if __name__ == '__main__':
     # environments()
-    baseline(PPO, 'adaptive/all')
+    # baseline(PPO, 'adaptive/all')
     # init(TRPO)
     # pretraining(TD3)
-    # normalize(TD3)
+    normalize(TD3)
 
