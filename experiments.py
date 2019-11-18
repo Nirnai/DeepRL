@@ -87,5 +87,5 @@ if __name__ == '__main__':
     # baseline(PPO, 'adaptive/all')
     # init(TRPO)
     # pretraining(TD3)
-    normalize(TD3)
+    normalize(TRPO)
 

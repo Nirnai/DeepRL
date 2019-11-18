@@ -7,7 +7,7 @@
     "CLIPPED_VALUE": false,
     "ADVANTAGE_NORMALIZATION": true,
     "EARLY_STOPPING": true,
-    "LR_SCHEDULE": false,
+    "LR_SCHEDULE": true,
     "MAX_ENTROPY": false,
     "DELAYED_START": 0,
     "EPOCHS": 10,

@@ -67,15 +67,14 @@ class PPO(BaseRL, OnPolicy):
             generator = self.data_generator(rollouts)
             for mini_batch in generator:
                 s, a, returns, old_values, old_log_probs, advantages = mini_batch
-                for _ in range(self.param.VALUE_EPOCHS):
-                    # Critic Step
-                    self.critic.train()
-                    values = self.critic(s)
-                    if self.param.CLIPPED_VALUE:
-                        critic_loss = self.clipped_value_loss(old_values, values, returns)
-                    else:
-                        critic_loss = F.mse_loss(values, returns)
-                    self.critic.optimize(critic_loss)
+                # Critic Step
+                self.critic.train()
+                values = self.critic(s)
+                if self.param.CLIPPED_VALUE:
+                    critic_loss = self.clipped_value_loss(old_values, values, returns)
+                else:
+                    critic_loss = F.mse_loss(values, returns)
+                self.critic.optimize(critic_loss)
                 # Actor Step
                 self.actor.train()
                 log_probs = self.actor.log_prob(s,a)

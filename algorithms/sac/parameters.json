@@ -1,13 +1,8 @@
 {
     "qvalue" : {
         "ARCHITECTURE" : [
-<<<<<<< HEAD
             400,
             300
-=======
-            256,
-            256
->>>>>>> 0c59c0f107a5d226f5aadb5504b3f3e777dbcef5
         ],
         "INIT": "orthogonal",
         "ACTIVATION" : "ReLU",
