@@ -146,32 +146,6 @@ class CrossEntropyGuidedPolicy(nn.Module):
         self.device = device
         self.to(self.device)
 
-    # def forward(self, state):
-    #     if state.dim() == 2:
-    #         mean = torch.zeros(state.shape[0], self.action_dim).to(self.device)
-    #         std = torch.ones(state.shape[0], self.action_dim).to(self.device)
-    #     else:
-    #         mean = torch.Tensor([0.0] * self.action_dim).to(self.device)
-    #         std = torch.Tensor([1.0] * self.action_dim).to(self.device)
-    #     states = torch.cat(self.batch*[state.unsqueeze(0)], dim=0)
-    #     for i in range(self.iterations):
-    #         p = dist.Normal(mean, std)
-    #         actions = p.sample((self.batch,))
-    #         actions = torch.tanh(actions)
-    #         with torch.no_grad():
-    #             Qs = self.q_function(states, actions)
-    #         Is = Qs.topk(self.topk , dim=0)[1]
-    #         if Is.dim() == 2:
-    #             actions_topk = torch.cat([actions[Is[:,i],i,:].unsqueeze(1) for i in torch.arange(Is.shape[1])], dim=1)
-    #             mean = actions_topk.mean(dim=0)
-    #             std = actions_topk.std(dim=0)
-    #             best_action = actions_topk[0]
-    #         else:
-    #             mean = actions[Is].mean(dim = 0)
-    #             std = actions[Is].std(dim = 0)
-    #             best_action = actions[Is[0]]
-    #     return best_action
-
     def forward(self, state):
         if state.ndim == 2:
             mean = np.zeros((len(state), self.action_dim))

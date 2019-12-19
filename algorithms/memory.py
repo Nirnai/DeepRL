@@ -3,8 +3,6 @@ import numpy as np
 from scipy.signal import lfilter
 from collections import deque, namedtuple
 
-
-
 class Buffer():
     def __init__(self, capacity, gamma, lamda, tau, env, device):
         self.device = device
