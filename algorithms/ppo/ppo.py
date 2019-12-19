@@ -7,14 +7,8 @@ from torch.nn.utils import clip_grad_norm_
 from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
 import scipy.signal
 from algorithms import BaseRL, OnPolicy
-from utils.policies import GaussianPolicy, BoundedGaussianPolicy
+from utils.policies import GaussianPolicy, BoundedGaussianPolicy, ClippedGaussianPolicy
 from utils.values_functions import ValueFunction
-from copy import deepcopy
-import gym
-# from envs.vectorized import DummyVecEnv
-from utils.memory import Buffer
-
-
 
 class PPO(BaseRL, OnPolicy):
     def __init__(self, env, param=None):
@@ -22,7 +16,6 @@ class PPO(BaseRL, OnPolicy):
         self.name = 'PPO'
         self.critic = ValueFunction(self.param.value , self.device)
         self.actor = GaussianPolicy(self.param.policy, self.device)
-        # self.init_policy()
         self.steps = 0
         self.episode_steps = 0
 
@@ -63,7 +56,8 @@ class PPO(BaseRL, OnPolicy):
         rollouts = self.onPolicyData
         if self.param.ADVANTAGE_NORMALIZATION:
             rollouts['advantages'] = (rollouts['advantages'] - rollouts['advantages'].mean()) / (rollouts['advantages'].std() + 1e-5) 
-        for i in range(self.param.EPOCHS):
+
+        for _ in range(self.param.EPOCHS):
             generator = self.data_generator(rollouts)
             for mini_batch in generator:
                 s, a, returns, old_values, old_log_probs, advantages = mini_batch
@@ -71,7 +65,7 @@ class PPO(BaseRL, OnPolicy):
                 self.critic.train()
                 values = self.critic(s)
                 if self.param.CLIPPED_VALUE:
-                    critic_loss = self.clipped_value_loss(old_values, values, returns)
+                    critic_loss = self.clipped_value_loss(old_val, values, returns)
                 else:
                     critic_loss = F.mse_loss(values, returns)
                 self.critic.optimize(critic_loss)
@@ -80,11 +74,12 @@ class PPO(BaseRL, OnPolicy):
                 log_probs = self.actor.log_prob(s,a)
                 kl_div = (old_log_probs-log_probs).mean()   
                 # Early Stopping            
-                if self.param.EARLY_STOPPING and kl_div > self.param.MAX_KL_DIV:
+                if self.param.EARLY_STOPPING and kl_div > 2 * self.param.MAX_KL_DIV:
                     # print('Early stopping at epoch {} due to reaching max kl.'.format(i))
                     break
                 actor_loss = self.clipped_policy_objective(old_log_probs, log_probs, advantages)
                 actor_loss -= self.param.ENTROPY_COEFFICIENT * log_probs.mean()
+                actor_loss += self.param.CUTOFF_COEFFICIENT * (kl_div > 2 * self.param.MAX_KL_DIV) * (kl_div - self.param.MAX_KL_DIV)**2
                 pg_norm += self.actor.optimize(actor_loss)
         self.critic_scheduler.step()
         self.actor_scheduler.step()
@@ -110,10 +105,6 @@ class PPO(BaseRL, OnPolicy):
         loss = (val - ret).pow(2)
         clipped_loss = ((old_val + torch.clamp(val - old_val, -self.param.CLIP, self.param.CLIP)) - ret).pow(2)
         return torch.max(loss, clipped_loss).mean()
-        # clipped_val = old_val + (val - old_val).clamp(-self.param.CLIP, self.param.CLIP)
-        # loss = (val - ret).pow(2)
-        # clipped_loss = (clipped_val - ret).pow(2)
-        # return torch.max(loss, clipped_loss).mean()
 
     def data_generator(self, rollouts):
         if self.param.NUM_MINI_BATCHES > 0:
@@ -136,18 +127,3 @@ class PPO(BaseRL, OnPolicy):
             pi = rollouts['log_probs']
             adv = rollouts['advantages']
             yield s, a, ret, val, pi, adv
-
-
-    def init_policy(self):
-        init_mean = 0.5 * (self.env.action_space.low + self.env.action_space.high) * np.ones(self.env.action_space.shape[0])
-        init_std =  0.5 * (self.env.action_space.high - self.env.action_space.low) * np.ones(self.env.action_space.shape[0])
-        for batchIdx in range(2000):
-            states = np.random.normal(0,1,size=[256, self.env.observation_space.shape[0]])
-            action_mean = self.actor(torch.from_numpy(states).float(), deterministic=True)
-            action_std = torch.exp(self.actor.log_std)
-            mean_target = torch.ones_like(action_mean).float() * torch.from_numpy(init_mean).float()
-            std_target = torch.from_numpy(init_std).float()
-            loss = torch.nn.functional.mse_loss(action_mean, mean_target) + \
-                torch.nn.functional.mse_loss(action_std, std_target)
-            # print(loss)
-            self.actor.optimize(loss)

@@ -4,10 +4,11 @@
     "CLIP": 0.2,
     "MAX_KL_DIV": 0.01,
     "ENTROPY_COEFFICIENT": 0,
+    "CUTOFF_COEFFICIENT": 100,
     "CLIPPED_VALUE": false,
-    "ADVANTAGE_NORMALIZATION": true,
-    "EARLY_STOPPING": true,
-    "LR_SCHEDULE": true,
+    "ADVANTAGE_NORMALIZATION": false,
+    "EARLY_STOPPING": false,
+    "LR_SCHEDULE": false,
     "MAX_ENTROPY": false,
     "DELAYED_START": 0,
     "EPOCHS": 10,
@@ -21,7 +22,7 @@
         "disturbance_intervall": 10,
         "eval_episodes": 10,
         "eval_timesteps": 10000,
-        "max_external_force": 1,
+        "max_external_force": 0.1,
         "total_timesteps": 1000000.0
     },
     "policy": {
@@ -30,10 +31,10 @@
             64,
             64
         ],
-        "INIT": "xavier",
+        "INIT": "naive",
         "LEARNING_RATE": 3e-4,
         "WEIGHT_DECAY": 0,
-        "MAX_GRAD_NORM": 0.5,
+        "MAX_GRAD_NORM": 0,
         "CLIPPED_ACTION": false,
         "DROPOUT": false,
         "BATCHNORM": false
@@ -44,7 +45,7 @@
             64,
             64
         ],
-        "INIT": "xavier",
+        "INIT": "naive",
         "LEARNING_RATE": 3e-4,
         "WEIGHT_DECAY": 0,
         "DROPOUT": false,

@@ -18,7 +18,7 @@ def mean_confidance(data, confidence=0.99):
     return mean, low, high
 
 
-def bootstrap_confidance(self, data, n=1000, func=np.mean):
+def bootstrap_confidance(data, n=10000, func=np.mean):
     """
     Generate `n` bootstrap samples, evaluating `func`
     at each resampling. `bootstrap` returns a function,
@@ -32,9 +32,17 @@ def bootstrap_confidance(self, data, n=1000, func=np.mean):
     # means.sort(axis=1)
     low = np.percentile(means, 2.5, axis=0)
     high = np.percentile(means, 97.5, axis=0)
+    # low = m-means.std(axis=0)
+    # high = m+means.std(axis=0)
+
     return m, low, high
 
-def effect_size(mean_exp, mean_ctrl, std_exp, std_ctrl):
+def effect_size(data_exp, data_ctrl):
+    mean_exp = data_exp.mean(axis=0)
+    mean_ctrl = data_ctrl.mean(axis=0)
+    std_exp = data_exp.std(axis=0)
+    std_ctrl = data_ctrl.std(axis=0)
+
     S = np.sqrt(std_ctrl**2 + std_exp**2)/2
     return np.abs(mean_exp - mean_ctrl)/S
 

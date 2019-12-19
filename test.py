@@ -1,68 +1,73 @@
-import sys
+# import os
+# import numpy as np
+
+# base = 'data/regularization/policySmoothing/'
+# # new_base = 'data/regularization/entropy/'
+
+# paths = [
+#     ['CGP_cheetahrun_2019-11-26_06-29',  'CGP_cheetahrun_2019-11-26_17-22']
+# ]
+
+# files = [
+#     '/returns_offline.npz',
+#     '/returns_online.npz']
+
+# for path in paths:
+#     for f in files:
+#         data = []
+#         for p in path:
+#             data += [array for array in np.load(base + p + f).values()]
+#         directory = ('_').join(path[0].split('_')[:2])
+#         if not os.path.isdir(base + directory):  
+#             os.makedirs(base + directory, exist_ok=True)
+#         new_path = base + directory + f
+#         np.savez(new_path, *data)
+
+####### Disturbances Test
 import os
-import time
+import sys
+import gym 
 import torch
-import gym
 import dm_control2gym
-import utils
 import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from algorithms import TRPO, TD3, SAC, PPO, CGP
+from algorithms import PPO
+from evaluator import Evaluator
 from algorithms import HyperParameter
 
-env = dm_control2gym.make(domain_name='cartpole', task_name='swingup')
-states = []
-actions = []
-for _ in range(10):
-    states.append(env.reset())
-    for _ in range(999):
-        a = env.action_space.sample()
-        s, _, _, _ = env.step(a)
-        states.append(s)
-        actions.append(a)
-states = np.stack(states)
-actions = np.stack(actions)
+envs = [
+    # ('cartpole', 'balance'),
+    ('cartpole', 'swingup'),
+    # ('acrobot', 'swingup'),
+    # ('cheetah', 'run'),
+    # ('hopper', 'hop'),
+    # ('walker', 'run')
+]
 
-algs = [CGP]
-for alg in algs:
-    plt.figure()
-    params_path = os.path.abspath(sys.modules[alg.__module__].__file__).split('/')
-    params_path[-1] = 'parameters.json'
-    params_path = '/'.join(params_path)
 
-    inits = ['naive', 'kaiming', 'orthogonal']
-    for init in inits:  
-        hist = np.zeros((100,))
-        bias = 0
-        for i in range(10):
-            param = HyperParameter(path=params_path)
-            param.policy['INIT'] = init
-            param.qvalue['INIT'] = init
-            agent = alg(env, param=param)  
-            with torch.no_grad():
-                if agent.name == 'CGP':
-                    start = time.clock()
-                    a = agent.actor_cem(torch.from_numpy(states).float())
-                    elapsed = time.clock()
-                    elapsed = elapsed - start
-                    print("Time: {}".format(elapsed))
-                else:
-                    a = agent.actor(torch.from_numpy(states).float())
-                    if agent.name == 'TD3':
-                        a += torch.randn(a.shape) * param.POLICY_EXPLORATION_NOISE 
-                        a = a.cpu().numpy()
-                        a = np.clip(a, -1, 1)
-            h, b= np.histogram(a, density=True, bins=100, range=[-1,1])
-            bias += a.mean()
-            hist += h
-        hist = hist/10
-        bias = bias/10
-        print(bias)
-        bins = np.linspace(-1,1,100)
-        plt.title('{}'.format(agent.name))
-        plt.xlabel('action')
-        plt.ylabel('PDF')
-        plt.plot(bins, hist, label=init)
-    plt.legend()
-plt.show()
+returns = []
+reg_returns = []
+
+for domain, task in envs:
+    env = dm_control2gym.make(domain_name=domain, task_name=task)
+    agent = PPO(env)
+    evl = Evaluator(agent, 'data/testGeneralization')
+    for i in range(10):
+        path = 'data/adaptive/LRSchedule_KLCutoff/PPO_{}/policies/actor_model_{}.pt'.format(domain+task,i)  
+        agent.actor.load_state_dict(torch.load(path)) 
+        evl.eval_robustness()
+        returns.append(np.mean(evl.robust_returns))
+        # evl.save_robust_returns()
+
+
+
+for domain, task in envs:
+    env = dm_control2gym.make(domain_name=domain, task_name=task)
+    agent = PPO(env)
+    evl = Evaluator(agent, 'data/testGeneralization')
+    for i in range(10):
+        path = 'data/regularization/l2/PPO_{}/policies/actor_model_{}.pt'.format(domain+task,i)  
+        agent.actor.load_state_dict(torch.load(path)) 
+        evl.eval_robustness()
+        reg_returns.append(np.mean(evl.robust_returns))
+
+print(returns)

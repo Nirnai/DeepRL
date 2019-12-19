@@ -130,7 +130,7 @@ class Evaluator():
 
     def eval_robustness(self):
         high = np.ones(2) * self.param.evaluation['max_external_force']
-        low = -high
+        low = - high
         dist_space = gym.spaces.Box(low, high)
         self.eval_alg.actor = deepcopy(self.alg.actor)
         returns = []
@@ -141,8 +141,8 @@ class Evaluator():
                 if t%self.param.evaluation['disturbance_intervall'] == 0:
                     ## Disturbance ##
                     dist = dist_space.sample()
-                    self.eval_alg.env.env.physics.data.xfrc_applied[2][0] = dist[0]
-                    self.eval_alg.env.env.physics.data.xfrc_applied[2][2] = dist[1]
+                    self.eval_alg.env.dmcenv.physics.data.xfrc_applied[2][0] = dist[0]
+                    self.eval_alg.env.dmcenv.physics.data.xfrc_applied[2][2] = dist[1]
                     #################
                 state, reward, done = self.eval_alg.act(state, deterministic=True)
                 r += reward
@@ -150,7 +150,7 @@ class Evaluator():
                     break
             returns.append(r)
         self.robust_returns.append(np.mean(returns)) 
-        self.robust_deviation.append(np.std(returns))   
+        # self.robust_deviation.append(np.std(returns))   
 
     ## Saving
     def create_output_dir(self, base):
@@ -191,6 +191,18 @@ class Evaluator():
                 samples = [array for array in np.load(fil).values()]
             samples.append(ret)
             np.savez(fil[:-4], *samples)
+        
+    def save_robust_returns(self):
+        robustreturns_file = '{}/robust_returns.npz'.format(self.out_dir)
+        returns_files = [robustreturns_file]
+        returns = [self.robust_returns]
+        for fil, ret in zip(returns_files, returns):
+            samples = []
+            if os.path.isfile(fil):
+                samples = [array for array in np.load(fil).values()]
+            samples.append(ret)
+            np.savez(fil[:-4], *samples)
+
     
     def save_metrics(self):
         for key, values in self.metrics.items():

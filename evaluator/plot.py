@@ -61,7 +61,7 @@ def plot_learning_curves(datas, labels=None, interval='t'):
             low = np.zeros(data.shape[1])
             high = np.zeros(data.shape[1])
             for i in range(data.shape[1]):
-                temp = bs.bootstrap(data[:,i], stat_func=bs_stats.median, alpha=0.05, is_pivotal=False)
+                temp = bs.bootstrap(data[:,i], stat_func=bs_stats.mean, alpha=0.05, is_pivotal=False)
                 means[i] = temp.value
                 low[i] = temp.lower_bound
                 high[i] = temp.upper_bound

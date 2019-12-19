@@ -7,7 +7,7 @@ from evaluator import Evaluator
 from algorithms import HyperParameter
 
 envs = [
-    ('cartpole', 'balance'),
+    # ('cartpole', 'balance'),
     ('cartpole', 'swingup'),
     ('acrobot', 'swingup'),
     ('cheetah', 'run'),
@@ -33,7 +33,7 @@ def baseline(alg, directory):
         env = dm_control2gym.make(domain_name=domain, task_name=task)
         agent = alg(env)
         evl = Evaluator(agent, 'data/{}'.format(directory))
-        evl.run_statistic(samples=5, seed=0)
+        evl.run_statistic(samples=10, seed=0)
 
 
 def init(alg):
@@ -84,8 +84,8 @@ def normalize(alg):
 
 if __name__ == '__main__':
     # environments()
-    # baseline(PPO, 'adaptive/all')
+    baseline(PPO, 'testOnlyCutoff')
     # init(TRPO)
     # pretraining(TD3)
-    normalize(TRPO)
+    # normalize(TRPO)
 

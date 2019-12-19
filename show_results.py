@@ -32,20 +32,25 @@ from evaluator.plot import plot_dataset, plot_learning_curves, load_dataset, plo
 # data =  'data/early Stopping/PPO_cartpoleswingup_2019-10-26_08-21/returns_offline.npz'
 # plot_dataset(data)
 
-returns = [ 
-            # 'data/external139/delayedStart/50000/TD3_cartpolebalance_2019-11-15_16-17/returns_offline.npz',
-            'data/init/naive/TRPO_cartpolebalance/returns_offline.npz',
-            'data/normalize/TRPO_cartpolebalance/returns_offline.npz',
-            'data/normalize/TRPO_cartpolebalance_2019-11-18_17-35/returns_offline.npz',
-            # 'data/adaptive/AdvNorm/PPO_cartpoleswingup_2019-11-15_12-30/returns_offline.npz'
-            # 'data/adaptive/AdvNorm/PPO_cartpolebalance_2019-11-15_09-15/explained_variance.npz'
-        ]
+returns = [ 'data/init/orthogonal/CGP_cartpoleswingup/returns_offline.npz',
+            'data/external5/init/kaiming/CGP_cartpoleswingup_2019-11-29_01-33/returns_offline.npz',
+            # 'data/external139/NEWnormalize/TD3_cheetahrun_2019-11-29_15-26/returns_offline.npz',
+            # 'data/external5/init/kaiming/CGP_cartpolebalance_2019-11-28_18-16/returns_offline.npz',
+            # 'data/external5/adaptive/bgd/none/PPO_cartpoleswingup_2019-11-19_11-29/returns_offline.npz',
+            # 'data/adaptive/Only-AdvNorm/PPO_cartpoleswingup_2019-11-15_15-44/returns_online.npz',
+            # 'data/external69/adaptive/AdvNorm/PPO_cartpoleswingup_2019-11-21_19-22/returns_offline.npz',
+            # 'data/external69/adaptive/AdvNorm_ClipGrad/PPO_cartpoleswingup_2019-11-19_19-34/returns_offline.npz',
+            # 'data/external5/adaptive/klstopping/PPO_cartpoleswingup_2019-11-20_17-44/returns_offline.npz',
+            # 'data/adaptive/KLCutoff/PPO_cartpoleswingup_2019-11-20_17-43/returns_offline.npz',
+            # 'data/init/naive/TRPO_cartpolebalance/returns_offline.npz',
+            # 'data/init/orthogonal/TD3_cartpolesactor_model_
+]
 data = []   
 for path in returns:
     data.append(load_dataset(path))
 fig, ax = plot_learning_curves(data, interval='bs')
 
-plot_dataset('data/external139/delayedStart/TD3_cartpolebalance_2019-11-18_12-17/returns_offline.npz')
+# plot_dataset('data/normalize/TRPO_cartpolebalance_2019-11-18_17-35/returns_offline.npz')
 # plt.ylim([-100,1000])
 # returns = [ 'data/normalize/TRPO_cheetahrun_2019-11-11_08-05/returns_online.npz',
 #             'data/init/orthogonal/PPO_cheetahrun_2019-11-12_07-46/returns_online.npz',
