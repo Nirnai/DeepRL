@@ -14,8 +14,10 @@ class Evaluator():
         self.eval_alg = deepcopy(self.alg)
         self.param = algorithm.param
         self.alg_name = algorithm.name
-        # self.env_name = algorithm.env.spec.id
-        self.env_name = algorithm.env.spec._kwargs['domain_name'] + algorithm.env.spec._kwargs['task_name']
+        if algorithm.env.spec._entry_point == 'dm_control2gym.wrapper:DmControlWrapper':
+            self.env_name = algorithm.env.spec._kwargs['domain_name'] + algorithm.env.spec._kwargs['task_name']
+        else:
+            self.env_name = algorithm.env.spec.id
         self.out_dir = self.create_output_dir(path)
         # Parameters
         self.total_timesteps = int(self.param.evaluation['total_timesteps'])
