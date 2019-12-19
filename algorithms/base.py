@@ -5,11 +5,12 @@ import numpy as np
 import torch
 import torch.optim as optim
 from abc import ABCMeta, abstractmethod
-from functools import wraps
-from algorithms import HyperParameter
-from utils.env import getEnvInfo
-from utils.values_functions import Value, QValue
-from utils.memory import Buffer, ReplayBuffer
+from algorithms import HyperParameter, Buffer, ReplayBuffer
+
+def getEnvInfo(env):
+    state_dim = int(env.observation_space.shape[0])
+    action_dim = int(env.action_space.shape[0])
+    return state_dim, action_dim
 
 class BaseRL(metaclass=ABCMeta):
     def __init__(self, env, param=None, device="cuda" if torch.cuda.is_available() else "cpu"):
@@ -97,52 +98,4 @@ class OffPolicy():
             return metrics
         return wrap
 
-
-class ActionValueFunction():
-    def __init__(self, param, device):
-        self.Q1 = QValue(param, device)
-        self.Q2 = QValue(param, device)
-        self.Q1_target = QValue(param, device)
-        self.Q2_target = QValue(param, device)
-        self.Q1_target.load_state_dict(self.Q1.state_dict())
-        self.Q2_target.load_state_dict(self.Q1.state_dict())
-        self.Q1_target.eval()
-        self.Q2_target.eval()
-        self.Q_optim = optim.Adam(list(self.Q1.parameters()) + list(self.Q2.parameters()), lr=param['LEARNING_RATE'], weight_decay=param['WEIGHT_DECAY'])
-        self._tau = param['TAU']
-    
-    def __call__(self, state, action):
-        return self.Q1(state, action), self.Q2(state, action)
-
-    def target(self, state, action):
-        return self.Q1_target(state, action), self.Q2_target(state, action)
-
-    def optimize(self, loss):
-        self.Q_optim.zero_grad()
-        loss.backward()
-        self.Q_optim.step()
-        self.target_update()
-    
-    def target_update(self):
-        for target_param, local_param in zip(self.Q1_target.parameters(), self.Q1.parameters()):
-            target_param.data.copy_(self._tau * local_param.data + (1.0 - self._tau) * target_param.data)
-        for target_param, local_param in zip(self.Q2_target.parameters(), self.Q2.parameters()):
-            target_param.data.copy_(self._tau * local_param.data + (1.0 - self._tau) * target_param.data)
-
-
-class ValueFunction():   
-    def __init__(self, param, device):
-        self.V = Value(param, device)
-        self.V_optim = optim.Adam(self.V.parameters(), lr=param['LEARNING_RATE'], weight_decay=param['WEIGHT_DECAY'])
-    
-    def parameters(self):
-        return self.V.parameters()
-    
-    def __call__(self, state):
-        return self.V(state)
-
-    def optimize(self, loss):
-        self.V_optim.zero_grad()
-        loss.backward()
-        self.V_optim.step()
 

@@ -7,8 +7,7 @@ from torch.nn.utils import clip_grad_norm_
 from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
 import scipy.signal
 from algorithms import BaseRL, OnPolicy
-from utils.policies import GaussianPolicy, BoundedGaussianPolicy, ClippedGaussianPolicy
-from utils.values_functions import ValueFunction
+from models import GaussianPolicy, ValueFunction
 
 class PPO(BaseRL, OnPolicy):
     def __init__(self, env, param=None):

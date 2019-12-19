@@ -3,10 +3,7 @@ import torch.distributions as dist
 import torch.nn.functional as F
 import numpy as np
 from algorithms import OffPolicy, BaseRL
-from utils.policies import CrossEntropyGuidedPolicy, DeterministicPolicy
-from utils.values_functions import ActionValueFunction
-
-import time
+from models import CrossEntropyGuidedPolicy, DeterministicPolicy, ActionValueFunction
 
 class CGP(BaseRL, OffPolicy):
     def __init__(self, env, param=None):

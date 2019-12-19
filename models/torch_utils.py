@@ -15,11 +15,10 @@ def make_mlp(params, output_dim):
                     batchnorm=bnorm,
                     dropout=dout).apply(inits[init]) for in_, out_ in zip(ins, outs)]
     layers.append(layer(outs[-1], output_dim).apply(inits[init]))
-    # layers.insert(0, nn.BatchNorm1d(ins[0], momentum=None, affine=False))
     return unwrap_layers(nn.Sequential(*layers))
 
 
-def layer(in_, out_, activation_=None, dropout=False, batchnorm=False):
+def layer(in_, out_, activation_=None, dropout=None, batchnorm=False):
     l = nn.ModuleList([nn.Linear(in_, out_)])
     if batchnorm:
         l.append(nn.BatchNorm1d(out_))
@@ -68,3 +67,10 @@ inits = {
     'kaiming': kaiming,
     'orthogonal': orthogonal
 }
+
+def hard_target_update(local, target):
+        target.load_state_dict(local.state_dict())
+
+def soft_target_update(local, target, tau):
+    for target_param, local_param in zip(target.parameters(), local.parameters()):
+        target_param.data.copy_(tau * local_param.data + (1.0 - tau) * target_param.data)

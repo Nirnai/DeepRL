@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from utils.torch_utils import make_mlp
+from models.torch_utils import make_mlp
 
 
 class ActionValueFunction():

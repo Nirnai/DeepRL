@@ -6,9 +6,7 @@ from copy import deepcopy
 from torch.distributions.kl import kl_divergence
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
 from algorithms import BaseRL, OnPolicy
-from utils.policies import GaussianPolicy, BoundedGaussianPolicy
-from utils.values_functions import ValueFunction
-
+from models import GaussianPolicy, ValueFunction
 
 class TRPO(BaseRL, OnPolicy):
     def __init__(self, env, param=None):

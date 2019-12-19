@@ -4,10 +4,7 @@ import torch.nn.functional as F
 import torch.distributions as dist
 import torch.optim as optim
 import numpy as np
-from utils.helper import soft_target_update
-from utils.torch_utils import make_mlp
-
-
+from models.torch_utils import make_mlp
 
 class GaussianPolicy(nn.Module):
     def __init__(self, params, device):

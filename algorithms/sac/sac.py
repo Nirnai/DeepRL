@@ -5,8 +5,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from copy import deepcopy
 from algorithms import BaseRL, HyperParameter, OffPolicy
-from utils.policies import BoundedGaussianPolicy
-from utils.values_functions import ActionValueFunction
+from models import BoundedGaussianPolicy, ActionValueFunction
 
 class SAC(BaseRL, OffPolicy):
     def __init__(self, env, param=None):

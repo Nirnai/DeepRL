@@ -4,9 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 from copy import deepcopy
 from algorithms import BaseRL, OffPolicy
-from utils.policies import DeterministicPolicy
-from utils.values_functions import ActionValueFunction
-from utils.helper import soft_target_update
+from models import DeterministicPolicy, ActionValueFunction, soft_target_update
 
 class TD3(BaseRL, OffPolicy):
     def __init__(self, env, param=None):
