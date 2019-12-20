@@ -23,12 +23,16 @@ The algorithms module implements a base class (BaseRL) for RL agents.
 Implemented algorithms are:
 Trust Region Policy Optimization (TRPO) 
   - Original Paper: https://arxiv.org/abs/1502.05477
+  
 Proximal Policy Optimization (PPO)
   - Original Paper: https://arxiv.org/abs/1707.06347
+  
 Twin Delayed Deep Deterministic Policy Gradient (TD3)
   - Original Paper: https://arxiv.org/abs/1802.09477
+  
 Soft Actor-Critic (SAC)
   - Original Paper: https://arxiv.org/abs/1801.01290
+  
 Cross Entropy Guided Policy (CGP)
   - Original Paper: https://arxiv.org/abs/1903.10605
 
