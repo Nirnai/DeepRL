@@ -1,5 +1,40 @@
 # DeepRL
-This module contains pytorch implementations of several deep reinforcement learning algorithms. 
+DeepRL is a pytorch implementation of Deep Reinforcement Learning algorithms. The project contains the following modules:
+- models
+- algorithms
+- evaluator
+
+## Models
+Models implements a set of common policies and value functions. 
+
+Implemented policies are:
+- Gaussian
+- Gaussian Bounded
+- Gaussian Clipped
+- Deterministic
+- Cross Entropy Method (CEM) 
+
+Implemented value functions are:
+- ValueFunction
+- ActionValueFunction
+
+## Algorithms
+The algorithms module implements a base class (BaseRL) for RL agents. 
+Implemented algorithms are:
+Trust Region Policy Optimization (TRPO) 
+  - Original Paper: https://arxiv.org/abs/1502.05477
+Proximal Policy Optimization (PPO)
+  - Original Paper: https://arxiv.org/abs/1707.06347
+Twin Delayed Deep Deterministic Policy Gradient (TD3)
+  - Original Paper: https://arxiv.org/abs/1802.09477
+Soft Actor-Critic (SAC)
+  - Original Paper: https://arxiv.org/abs/1801.01290
+Cross Entropy Guided Policy (CGP)
+  - Original Paper: https://arxiv.org/abs/1903.10605
+
+## Evaluator
+The evaluator module addresses the issue of reproducable RL, by seperating the evaluation process from the core algorithms. This follows guidelines of 
+
 
 ## Requirements
 - Python3
