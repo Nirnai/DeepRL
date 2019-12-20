@@ -21,6 +21,7 @@ Implemented value functions are:
 ## Algorithms
 The algorithms module implements a base class (BaseRL) for RL agents. 
 Implemented algorithms are:
+
 Trust Region Policy Optimization (TRPO) 
   - Original Paper: https://arxiv.org/abs/1502.05477
   
