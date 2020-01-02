@@ -38,7 +38,7 @@ Cross Entropy Guided Policy (CGP)
   - Original Paper: https://arxiv.org/abs/1903.10605
 
 ## Evaluator
-The evaluator module addresses the issue of reproducable RL, by seperating the evaluation process from the core algorithms. This follows guidelines of 
+The evaluator module addresses the issue of reproducable RL, by seperating the evaluation process from the core algorithms.
 
 
 ## Requirements
