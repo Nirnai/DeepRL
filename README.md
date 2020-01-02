@@ -37,16 +37,7 @@ Soft Actor-Critic (SAC)
 Cross Entropy Guided Policy (CGP)
   - Original Paper: https://arxiv.org/abs/1903.10605
 
-## Evaluator
-The evaluator module addresses the issue of reproducable RL, by seperating the evaluation process from the core algorithms.
-
-
-## Requirements
-- Python3
-- PyTorch
-- Gym
-
-## Training
+An example of the exposed interface is shown in the following:
 ```python
 import gym
 from algorithms import TD3
@@ -61,7 +52,8 @@ for t in range(timesteps):
       metrics = agent.learn()
 ```
 
-## Evaluation
+## Evaluator
+The evaluator module addresses the issue of reproducable RL, by seperating the evaluation process from the core algorithms.
 The evaluation class allows to easily generate statistical evaluation of an algorithm
 
 ```python
@@ -91,3 +83,12 @@ for alg in algs:
 returns = load_dataset('path/to/returns_offline.npz')
 fig, ax = plot_learning_curves(returns, interval='bs')
 ```
+
+
+## Requirements
+- Python3
+- PyTorch
+- Gym
+- MuJoCo
+- dm_control
+- dm_control2gym
