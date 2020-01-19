@@ -7,7 +7,7 @@ from evaluator import Evaluator
 from algorithms import HyperParameter
 
 envs = [
-    # ('cartpole', 'balance'),
+    ('cartpole', 'balance'),
     ('cartpole', 'swingup'),
     ('acrobot', 'swingup'),
     ('cheetah', 'run'),

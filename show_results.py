@@ -45,10 +45,10 @@ returns = [ 'data/init/orthogonal/CGP_cartpoleswingup/returns_offline.npz',
             # 'data/init/naive/TRPO_cartpolebalance/returns_offline.npz',
             # 'data/init/orthogonal/TD3_cartpolesactor_model_
 ]
-data = []   
-for path in returns:
-    data.append(load_dataset(path))
-fig, ax = plot_learning_curves(data, interval='bs')
+# data = []   
+# for path in returns:
+#     data.append(load_dataset(path))
+# fig, ax = plot_learning_curves(data, interval='bs')
 
 # plot_dataset('data/normalize/TRPO_cartpolebalance_2019-11-18_17-35/returns_offline.npz')
 # plt.ylim([-100,1000])
@@ -88,14 +88,13 @@ fig, ax = plot_learning_curves(data, interval='bs')
 
 
 # ### PG-Norm and KL-Div ### 
-# paths = ['data/init/xavier/PPO_cartpolebalance/kl.npz',
-#          'data/init/xavier/TRPO_cartpolebalance/kl.npz',
-#          'data/delayedStart/PPO_cartpolebalance_2019-11-06_08-24/kl.npz']
-# data = []
-# for path in paths:
-#     data.append(load_dataset(path))
-# plot_kl(data)
-# plt.ylim([0,0.5])
+paths = ['/home/nirnai/Cloud/Uni/TUM/MasterThesis/data/init/naive/TRPO_cartpoleswingup/kl.npz',]
+        #  '/home/nirnai/Cloud/Uni/TUM/MasterThesis/data/adaptive/Basic/PPO_cartpoleswingup/kl.npz',]
+data = []
+for path in paths:
+    data.append(load_dataset(path))
+plot_kl(data)
+plt.ylim([0,0.3])
 
 
 plt.show()
